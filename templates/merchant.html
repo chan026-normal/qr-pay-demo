@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{ store_name }} · POS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Pretendard', system-ui, -apple-system, sans-serif; }
+  .glow { box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: glow 1.4s ease-out; }
+  @keyframes glow { 0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)} 100%{box-shadow:0 0 0 24px rgba(34,197,94,0)} }
+  .fade-in { animation: fade .25s ease-out; }
+  @keyframes fade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  .check { stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw .55s ease forwards .15s; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+<div class="max-w-6xl mx-auto p-6">
+
+  <header class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white grid place-items-center font-black text-lg">G</div>
+      <div>
+        <div class="text-xs text-slate-500">가맹점 POS</div>
+        <div class="text-xl font-bold text-slate-900">{{ store_name }}</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-sm">
+      <a href="/admin" class="px-3 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">결제 내역</a>
+      <span class="px-3 py-2 rounded-lg bg-slate-900 text-white">상점 ID · {{ store_id }}</span>
+    </div>
+  </header>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <!-- LEFT: 금액 입력 -->
+    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <div class="text-sm font-semibold text-slate-500 mb-2">결제 금액</div>
+      <div class="flex items-end gap-2 mb-4">
+        <input id="amount" type="text" inputmode="numeric" value="0"
+               class="flex-1 text-5xl font-black tracking-tight text-slate-900 bg-transparent outline-none w-full" />
+        <span class="text-2xl font-bold text-slate-400 pb-2">원</span>
+      </div>
+      <input id="memo" type="text" placeholder="메모 (예: 아메리카노 1잔)"
+             maxlength="40"
+             class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 outline-none focus:border-slate-400 text-sm" />
+
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        {% for n in ['1','2','3','4','5','6','7','8','9','00','0','←'] %}
+        <button data-key="{{n}}" class="key py-4 text-xl font-bold bg-slate-50 hover:bg-slate-100 active:bg-slate-200 rounded-xl border border-slate-200">{{n}}</button>
+        {% endfor %}
+      </div>
+
+      <div class="grid grid-cols-4 gap-2 mt-3">
+        <button data-add="1000" class="add py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800">+1,000</button>
+        <button data-add="5000" class="add py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800">+5,000</button>
+        <button data-add="10000" class="add py-2 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800">+10,000</button>
+        <button id="clear" class="py-2 text-sm bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 border border-rose-200">초기화</button>
+      </div>
+
+      <button id="charge"
+              class="mt-6 w-full py-4 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white text-lg font-bold hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed">
+        결제 요청 (QR 생성)
+      </button>
+      <div class="mt-3 text-xs text-slate-400 text-center">손님은 같은 Wi-Fi에서 QR을 스캔합니다 · 시연 호스트: {{ lan_host }}</div>
+    </section>
+
+    <!-- RIGHT: QR / 결제 상태 -->
+    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-sm font-semibold text-slate-500">결제 요청</div>
+        <div id="statusBadge" class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-500">대기</div>
+      </div>
+
+      <div id="emptyState" class="flex-1 grid place-items-center text-center text-slate-400 py-16">
+        <div>
+          <svg class="mx-auto w-14 h-14 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h-3zM18 18h3v3h-3zM15 21h6"/></svg>
+          <div class="mt-3 text-sm">금액을 입력한 뒤 <b>결제 요청</b>을 누르세요.</div>
+        </div>
+      </div>
+
+      <div id="qrState" class="hidden flex-1 flex flex-col items-center justify-center text-center fade-in">
+        <img id="qrImg" alt="QR" class="w-64 h-64 rounded-xl bg-slate-50 p-3 border border-slate-200" />
+        <div class="mt-4 text-3xl font-black text-slate-900"><span id="qrAmount">0</span>원</div>
+        <div class="text-sm text-slate-500" id="qrMemo"></div>
+        <div class="mt-2 text-xs text-slate-400">주문번호 <span id="qrOrderId" class="font-mono"></span></div>
+        <div class="mt-4 flex gap-2">
+          <a id="openLink" target="_blank" class="text-xs px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">손님 화면 미리보기</a>
+          <button id="cancelBtn" class="text-xs px-3 py-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200">취소</button>
+        </div>
+      </div>
+
+      <div id="paidState" class="hidden flex-1 flex flex-col items-center justify-center text-center fade-in">
+        <div class="w-28 h-28 rounded-full bg-emerald-100 grid place-items-center glow">
+          <svg viewBox="0 0 24 24" class="w-16 h-16" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path class="check" d="M5 12l5 5L20 7"/>
+          </svg>
+        </div>
+        <div class="mt-4 text-2xl font-black text-emerald-700">결제 완료</div>
+        <div class="mt-1 text-4xl font-black text-slate-900"><span id="paidAmount">0</span>원</div>
+        <div class="mt-1 text-sm text-slate-500">
+          <span id="paidPayer">손님</span> · <span id="paidMethod">카드</span> · <span id="paidAt"></span>
+        </div>
+        <button id="newOrder" class="mt-6 px-5 py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800">새 주문</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const amountEl = document.getElementById('amount');
+const memoEl = document.getElementById('memo');
+const chargeBtn = document.getElementById('charge');
+const emptyState = document.getElementById('emptyState');
+const qrState = document.getElementById('qrState');
+const paidState = document.getElementById('paidState');
+const statusBadge = document.getElementById('statusBadge');
+
+function fmt(n) { return Number(n).toLocaleString('ko-KR'); }
+function getAmount() { return Number(String(amountEl.value).replace(/[^\d]/g,'')) || 0; }
+function setAmount(n) { amountEl.value = fmt(Math.max(0, Math.min(n, 99999999))); }
+
+setAmount(0);
+
+document.querySelectorAll('.key').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.key;
+  let cur = String(getAmount());
+  if (k === '←') cur = cur.slice(0, -1) || '0';
+  else if (k === '00') cur = cur === '0' ? '0' : cur + '00';
+  else cur = cur === '0' ? k : cur + k;
+  setAmount(Number(cur));
+}));
+document.querySelectorAll('.add').forEach(b => b.addEventListener('click', () => setAmount(getAmount() + Number(b.dataset.add))));
+document.getElementById('clear').addEventListener('click', () => { setAmount(0); memoEl.value=''; });
+
+let currentOrderId = null;
+let ws = null;
+
+function showState(which) {
+  emptyState.classList.toggle('hidden', which !== 'empty');
+  qrState.classList.toggle('hidden', which !== 'qr');
+  paidState.classList.toggle('hidden', which !== 'paid');
+  emptyState.classList.toggle('flex-1', which === 'empty');
+  qrState.classList.toggle('flex', which === 'qr');
+  paidState.classList.toggle('flex', which === 'paid');
+}
+
+function setBadge(text, cls) {
+  statusBadge.className = 'text-xs px-2 py-1 rounded-full ' + cls;
+  statusBadge.textContent = text;
+}
+
+chargeBtn.addEventListener('click', async () => {
+  const amount = getAmount();
+  if (amount <= 0) { amountEl.focus(); return; }
+  chargeBtn.disabled = true;
+  try {
+    const res = await fetch('/api/order', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ amount, memo: memoEl.value, base: location.origin })
+    });
+    const data = await res.json();
+    currentOrderId = data.order_id;
+
+    document.getElementById('qrImg').src = data.qr;
+    document.getElementById('qrAmount').textContent = fmt(data.amount);
+    document.getElementById('qrMemo').textContent = data.memo || '';
+    document.getElementById('qrOrderId').textContent = data.order_id;
+    document.getElementById('openLink').href = data.pay_url;
+
+    showState('qr');
+    setBadge('결제 대기 중…', 'bg-amber-100 text-amber-700');
+
+    if (ws) ws.close();
+    const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${wsProto}://${location.host}/ws/order/${data.order_id}`);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'paid') {
+        const o = msg.order;
+        document.getElementById('paidAmount').textContent = fmt(o.amount);
+        document.getElementById('paidPayer').textContent = o.payer_name || '손님';
+        document.getElementById('paidMethod').textContent = ({card:'카드', bank:'계좌이체', point:'포인트'}[o.method] || '카드');
+        document.getElementById('paidAt').textContent = (o.paid_at || '').replace('T',' ');
+        showState('paid');
+        setBadge('결제 완료', 'bg-emerald-100 text-emerald-700');
+      } else if (msg.type === 'cancelled') {
+        setBadge('취소됨', 'bg-rose-100 text-rose-700');
+      }
+    };
+  } catch (err) {
+    alert('주문 생성 실패: ' + err);
+  } finally {
+    chargeBtn.disabled = false;
+  }
+});
+
+document.getElementById('cancelBtn').addEventListener('click', async () => {
+  if (!currentOrderId) return;
+  await fetch(`/api/order/${currentOrderId}/cancel`, {method:'POST'});
+  showState('empty'); setBadge('대기', 'bg-slate-100 text-slate-500');
+  if (ws) ws.close();
+});
+
+document.getElementById('newOrder').addEventListener('click', () => {
+  setAmount(0); memoEl.value=''; currentOrderId = null;
+  showState('empty'); setBadge('대기', 'bg-slate-100 text-slate-500');
+});
+</script>
+</body>
+</html>
