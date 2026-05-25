@@ -15,6 +15,13 @@ from fastapi.templating import Jinja2Templates
 STORE_NAME = "coconut.kim"
 STORE_ID = "coco-001"
 
+# 메뉴 카탈로그 (가맹점 POS 화면에 표시)
+MENU = [
+    {"id": "smoothie", "name": "코코넛 스무디", "price": 4000, "emoji": "🥥"},
+    {"id": "water", "name": "코코넛 워터", "price": 2500, "emoji": "💧"},
+    {"id": "chip", "name": "코코넛 칩", "price": 3000, "emoji": "🍪"},
+]
+
 app = FastAPI(title="QR Pay Demo")
 templates = Jinja2Templates(directory="templates")
 
@@ -86,6 +93,7 @@ async def merchant_page(request: Request):
             "store_name": STORE_NAME,
             "store_id": STORE_ID,
             "lan_host": f"{lan_ip}:{port}",
+            "menu": MENU,
         },
     )
 
