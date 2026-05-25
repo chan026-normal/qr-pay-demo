@@ -12,8 +12,8 @@ from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconn
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-STORE_NAME = "강남 카페 GYBM"
-STORE_ID = "GYBM-001"
+STORE_NAME = "coconut.kim"
+STORE_ID = "coco-001"
 
 app = FastAPI(title="QR Pay Demo")
 templates = Jinja2Templates(directory="templates")
@@ -180,6 +180,15 @@ async def pay_order(order_id: str, payload: dict):
 
     await broadcast(order_id, {"type": "paid", "order": order.__dict__})
     return {"ok": True, "order": order.__dict__}
+
+
+@app.post("/api/admin/reset")
+async def admin_reset():
+    """결제 내역 및 활성 주문을 전부 초기화 (시연용)."""
+    ORDERS.clear()
+    HISTORY.clear()
+    SUBSCRIBERS.clear()
+    return {"ok": True, "message": "모든 결제 내역이 초기화되었습니다."}
 
 
 @app.post("/api/order/{order_id}/cancel")
