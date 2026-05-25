@@ -10,14 +10,12 @@ from typing import Dict, List, Optional
 import qrcode
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 STORE_NAME = "강남 카페 GYBM"
 STORE_ID = "GYBM-001"
 
 app = FastAPI(title="QR Pay Demo")
-app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
