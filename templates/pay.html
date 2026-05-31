@@ -135,7 +135,7 @@ payBtn.addEventListener('click', async () => {
 // 📲 공유
 document.getElementById('payShareBtn').addEventListener('click', () => {
   const url = location.origin + '/start';
-  const text = 'coconut.kim 🥥 QR로 주문하면 줄 안 서고 바로 픽업! 스탬프 모으면 무료 음료 🎁 지금 주문 👉';
+  const text = 'coconut.kim 🥥 폰으로 미리 주문하고 준비되면 픽업! 스탬프 모으면 무료 음료 🎁 지금 주문 👉';
   if (navigator.share){
     navigator.share({ title: 'coconut.kim', text, url }).catch(() => {});
   } else {
