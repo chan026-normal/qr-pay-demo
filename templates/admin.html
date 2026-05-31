@@ -24,22 +24,9 @@
     </div>
     <div class="flex items-center gap-2">
       <a href="/admin/export.csv" class="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm font-semibold">🧾 매출 내역 받기</a>
-      <button id="resetBtn" class="px-3 py-2 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-sm font-semibold">결제내역 초기화</button>
       <a href="/" class="px-3 py-2 rounded-lg text-white text-sm" style="background:linear-gradient(135deg,#8B5A2B,#5C3D2E);">POS로 돌아가기</a>
     </div>
   </div>
-
-  <script>
-    document.getElementById('resetBtn').addEventListener('click', async () => {
-      if (!confirm('정말 모든 결제 내역을 삭제할까요?\n시연용 데모이므로 복구할 수 없습니다.')) return;
-      const res = await fetch('/api/admin/reset', { method: 'POST' });
-      if (res.ok) {
-        location.reload();
-      } else {
-        alert('초기화 실패. 다시 시도해주세요.');
-      }
-    });
-  </script>
 
   {% set total = orders|sum(attribute='amount') %}
   <div class="grid grid-cols-3 gap-4 mb-6">
@@ -226,6 +213,24 @@
       </tbody>
     </table>
   </div>
+
+  <!-- ⚠️ 위험 구역 (실수 방지를 위해 맨 아래 배치) -->
+  <div class="mt-10 pt-6 border-t border-rose-200">
+    <div class="text-xs text-rose-400 mb-2">⚠️ 주의 구역 — 아래 작업은 되돌릴 수 없습니다</div>
+    <button id="resetBtn" class="px-3 py-2 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-sm font-semibold">결제내역 초기화</button>
+  </div>
+
+  <script>
+    document.getElementById('resetBtn').addEventListener('click', async () => {
+      if (!confirm('정말 모든 결제 내역을 삭제할까요?\n시연용 데모이므로 복구할 수 없습니다.')) return;
+      const res = await fetch('/api/admin/reset', { method: 'POST' });
+      if (res.ok) {
+        location.reload();
+      } else {
+        alert('초기화 실패. 다시 시도해주세요.');
+      }
+    });
+  </script>
 </div>
 </body>
 </html>
