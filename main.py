@@ -549,25 +549,25 @@ def _smart_insights():
 
     insights, forecast, combos, recommendations = [], [], [], []
 
-    # ① 현황 분석
+    # ① 현황 분석 (간결 헤드라인 스타일)
     avg = total_rev // n_orders if n_orders else 0
-    insights.append(f"총 {n_orders}건 주문 · 매출 {total_rev:,}원 · 평균 객단가 {avg:,}원입니다.")
+    insights.append(f"총 {n_orders}건 · 매출 {total_rev:,}원 · 객단가 {avg:,}원")
     if item_stats:
         top = item_stats[0]
         share = round(top["revenue"] / total_rev * 100) if total_rev else 0
-        insights.append(f"가장 인기 메뉴는 '{top['name']}' — {top['qty']}개 판매, 매출의 약 {share}%를 차지합니다.")
+        insights.append(f"인기 메뉴 {top['name']} — {top['qty']}개 · 매출 {share}%")
     if method_stats:
-        insights.append(f"결제는 주로 '{method_stats[0]['label']}'({method_stats[0]['pct']}%)로 이루어집니다.")
+        insights.append(f"결제 {method_stats[0]['label']} 비중 {method_stats[0]['pct']}%")
 
     # ⑤ 수요 예측 · 발주
     if hourly:
         peak = max(hourly, key=lambda h: h["revenue"])
-        forecast.append(f"매출 피크는 {peak['hour']}시대입니다. 이 시간 전후로 인력·재고를 보강하세요.")
+        forecast.append(f"매출 피크 {peak['hour']}시대 — 인력·재고 보강")
     if item_stats:
-        forecast.append(f"'{item_stats[0]['name']}'은(는) 회전이 빠릅니다. 재고를 넉넉히 준비하세요.")
+        forecast.append(f"{item_stats[0]['name']} 회전 빠름 → 재고 넉넉히")
         if len(item_stats) > 1:
             slow = item_stats[-1]
-            forecast.append(f"'{slow['name']}'은(는) 판매가 더딥니다. 세트 구성·프로모션을 검토하세요.")
+            forecast.append(f"{slow['name']} 판매 더딤 → 세트·프로모션 검토")
 
     # ④ 함께 팔리는 조합 (동시 주문 빈도)
     pair_count: Dict[tuple, int] = {}
@@ -576,17 +576,17 @@ def _smart_insights():
         for a, b in combinations(ids, 2):
             pair_count[(a, b)] = pair_count.get((a, b), 0) + 1
     for (a, b), c in sorted(pair_count.items(), key=lambda x: -x[1])[:3]:
-        combos.append(f"'{name_by_id.get(a, a)}' + '{name_by_id.get(b, b)}' 함께 주문 {c}회 — 세트로 묶으면 객단가 상승 기대")
+        combos.append(f"{name_by_id.get(a, a)} + {name_by_id.get(b, b)} 함께 {c}회 — 세트로 객단가 ↑")
     if not combos:
-        combos.append("아직 함께 주문된 조합 데이터가 부족합니다. 주문이 쌓이면 추천 세트를 제안합니다.")
+        combos.append("함께 주문 데이터 부족 — 주문 쌓이면 세트 추천")
 
     # 💡 실행 추천
     point = next((m for m in method_stats if m["method"] == "point"), None)
     if not point or point["pct"] < 15:
-        recommendations.append("포인트 결제 비중이 낮습니다. 적립·포인트 이벤트로 재방문을 유도하세요.")
+        recommendations.append("포인트 결제 낮음 → 적립 이벤트로 재방문 유도")
     if item_stats and total_rev and round(item_stats[0]["revenue"] / total_rev * 100) > 55:
-        recommendations.append(f"'{item_stats[0]['name']}' 의존도가 높습니다. 다른 메뉴 프로모션으로 매출을 분산하면 안정적입니다.")
-    recommendations.append("외국어 주문 비중을 관찰해, 많이 쓰이는 언어권 손님 대상 현지화 마케팅을 고려하세요.")
+        recommendations.append(f"{item_stats[0]['name']} 의존도 높음 → 다른 메뉴 프로모션으로 분산")
+    recommendations.append("외국어 주문 비중 관찰 → 인기 언어권 현지화 마케팅")
 
     return {"insights": insights, "forecast": forecast, "combos": combos, "recommendations": recommendations}
 
@@ -648,7 +648,15 @@ async def api_insights():
     }
     system = (
         "You are a retail operations analyst for a coconut drink shop named coconut.kim. "
-        "Given the sales data, produce concise, specific, actionable insights in Korean. "
+        "Produce PUNCHY, telegraphic Korean insights — headline style, NOT full polite sentences. "
+        "Compress with em-dash '—' (핵심 — 근거) and arrow '→' (문제 → 해결). "
+        "Each bullet is a short phrase (ideally under ~25 Korean chars), citing concrete numbers. "
+        "AVOID verbose endings like '~이며', '~입니다', '~하세요'. Use noun-ending or imperative-short form. "
+        "STYLE EXAMPLES (mimic exactly this tone): "
+        "insights → '가장 인기 메뉴는 코코넛 스무디 — 매출의 56%'; "
+        "forecast → '매출 피크는 15시대 — 이 시간 인력·재고 보강'; "
+        "combos → '스무디 + 워터 함께 주문 2회 — 세트로 묶으면 객단가 상승'; "
+        "recommendations → '스무디 의존도 높음 → 다른 메뉴 프로모션으로 분산'. "
         "CRITICAL: 'FACTS_GROUND_TRUTH' is pre-computed and authoritative. NEVER contradict it. "
         "The least-sold item is exactly facts.lowest_seller; the best-seller is facts.top_seller. "
         "Do not recompute or guess rankings — use the given facts. "
@@ -656,7 +664,7 @@ async def api_insights():
         "Respond ONLY as JSON with these array-of-string keys: "
         "insights (current status), forecast (demand/staffing/inventory advice), "
         "combos (cross-sell/set-menu ideas), recommendations (action items). "
-        "Each array should have 2-4 short Korean sentences citing the actual numbers."
+        "Each array: 2-4 punchy bullets in the style above."
     )
     user = f"SALES_DATA={json.dumps(context, ensure_ascii=False)}"
     result = await llm_json(system, user)
