@@ -10,8 +10,16 @@ import urllib.request
 import uuid
 from base64 import b64encode
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
+
+# 매장 표준시 (기본 한국 KST=+9, 베트남 운영 시 TZ_OFFSET_HOURS=7 로 설정)
+APP_TZ = timezone(timedelta(hours=float(os.environ.get("TZ_OFFSET_HOURS", "9"))))
+
+
+def now_str() -> str:
+    """매장 표준시 기준 ISO 시각 문자열 (타임존 표기 없는 로컬 시각)."""
+    return datetime.now(APP_TZ).replace(tzinfo=None).isoformat(timespec="seconds")
 
 import qrcode
 from PIL import Image, ImageDraw
@@ -322,7 +330,7 @@ class Order:
     amount: int
     memo: str
     status: str = "pending"  # pending | paid | cancelled
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
+    created_at: str = field(default_factory=now_str)
     paid_at: Optional[str] = None
     payer_name: Optional[str] = None
     method: Optional[str] = None  # card | bank | point
@@ -719,7 +727,7 @@ async def export_csv():
             items_str, method_kr.get(o.method, o.method or ""),
             o.payer_name or "", o.amount,
         ])
-    filename = f"coconut_orders_{datetime.now():%Y%m%d_%H%M}.csv"
+    filename = f"coconut_orders_{datetime.now(APP_TZ):%Y%m%d_%H%M}.csv"
     return Response(
         content=buf.getvalue().encode("utf-8"),
         media_type="text/csv; charset=utf-8",
@@ -951,7 +959,7 @@ async def pay_order(order_id: str, payload: dict):
     await asyncio.sleep(0.6)
 
     order.status = "paid"
-    order.paid_at = datetime.now().isoformat(timespec="seconds")
+    order.paid_at = now_str()
     order.payer_name = payer_name
     order.method = method
     HISTORY.append(order)
@@ -996,7 +1004,7 @@ async def create_preorder(payload: dict):
         amount=amount,
         memo=memo,
         status="paid",
-        paid_at=datetime.now().isoformat(timespec="seconds"),
+        paid_at=now_str(),
         payer_name=payer_name,
         method=method,
         order_type="preorder",
