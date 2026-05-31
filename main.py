@@ -1355,6 +1355,7 @@ async def update_pickup_status(order_id: str, payload: dict):
         raise HTTPException(status_code=400, detail="잘못된 상태값입니다.")
 
     order.pickup_status = new_status
+    db_save_order(order)                   # 픽업 상태 변경을 DB에 영구 저장 (없으면 재배포 시 주방에 부활)
     event = {"type": "status", "order": order.__dict__}
     await broadcast(order_id, event)       # 손님 추적 화면 갱신
     await broadcast_kitchen(event)         # 다른 주방 화면 동기화
