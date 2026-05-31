@@ -97,10 +97,8 @@ const FLOW = ["received","preparing","ready","picked_up"];
 // ── 언어 ──
 function getLang(){
   const saved = localStorage.getItem('cocokim_lang');
-  if (saved) return saved;
-  const codes = window.LANGS.map(l => l.code);
-  const nav = (navigator.language || 'ko').slice(0,2);
-  return codes.includes(nav) ? nav : 'ko';
+  if (saved) return saved;       // 손님이 직접 고른 언어는 기억
+  return 'vi';                   // 기본(첫 화면) 언어: 베트남어
 }
 let LANG = getLang();
 let currentStatus = "{{ order.pickup_status or 'received' }}";
