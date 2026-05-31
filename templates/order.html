@@ -114,7 +114,15 @@ function getLang(){
 }
 let LANG = getLang();
 function t(k){ return (window.I18N[LANG] && window.I18N[LANG][k]) || window.I18N.ko[k] || k; }
-function priceFmt(n){ return LANG === 'ko' ? n.toLocaleString('ko-KR') + '원' : '₩' + n.toLocaleString('en-US'); }
+// 실시간 환율 (기준 KRW). API 로드 전엔 폴백값 사용 → 로드 후 갱신
+let RATES = { KRW:1, USD:0.00072, VND:18.3, CNY:0.0052, JPY:0.11 };
+let CUR_BY_LANG = { ko:{code:'KRW',locale:'ko-KR'}, vi:{code:'VND',locale:'vi-VN'}, en:{code:'USD',locale:'en-US'}, zh:{code:'CNY',locale:'zh-CN'}, ja:{code:'JPY',locale:'ja-JP'} };
+function priceFmt(krw){
+  const c = CUR_BY_LANG[LANG] || CUR_BY_LANG.ko;
+  const val = krw * (RATES[c.code] || 1);
+  try { return new Intl.NumberFormat(c.locale, {style:'currency', currency:c.code}).format(val); }
+  catch(e){ return Math.round(val).toLocaleString() + ' ' + c.code; }
+}
 function menuName(id){ const m = menuById[id]; return (m.i18n && m.i18n[LANG]) || m.name; }
 
 function applyLang(lang){
@@ -186,6 +194,13 @@ document.getElementById('payBtn').addEventListener('click', async () => {
 });
 
 applyLang(LANG);
+
+// 실시간 환율 불러와 가격 갱신
+fetch('/api/rates').then(r => r.json()).then(d => {
+  if (d.rates) RATES = d.rates;
+  if (d.currency_by_lang) CUR_BY_LANG = d.currency_by_lang;
+  applyLang(LANG);
+}).catch(() => {});
 
 // ── PWA ──
 if ('serviceWorker' in navigator) {

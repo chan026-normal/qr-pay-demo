@@ -2,6 +2,8 @@ import asyncio
 import io
 import json
 import socket
+import time
+import urllib.request
 import uuid
 from base64 import b64encode
 from dataclasses import dataclass, field
@@ -156,6 +158,46 @@ I18N = {
         "samsung_guide": "Samsung Internet ではインストール時に Android のセキュリティでブロック（「安全でないアプリ」）されることがあります。\n\n• Chrome で開くと正常にインストールできます。\n• またはインストールせず、この画面でそのまま注文できます。",
     },
 }
+
+# 언어 → 통화 매핑 (가격 자동 변환용). 기준 통화는 원화(KRW).
+CURRENCY_BY_LANG = {
+    "ko": {"code": "KRW", "locale": "ko-KR"},
+    "vi": {"code": "VND", "locale": "vi-VN"},
+    "en": {"code": "USD", "locale": "en-US"},
+    "zh": {"code": "CNY", "locale": "zh-CN"},
+    "ja": {"code": "JPY", "locale": "ja-JP"},
+}
+TARGET_CODES = ["KRW", "USD", "VND", "CNY", "JPY"]
+# 폴백 환율 (1 KRW 당) — 실시간 API 실패 시 사용 (대략값, 데모 안전망)
+FALLBACK_RATES = {"KRW": 1.0, "USD": 0.00072, "VND": 18.3, "CNY": 0.0052, "JPY": 0.11}
+RATE_TTL = 6 * 3600  # 6시간마다 갱신 (무료 API는 하루 1회 갱신)
+_RATE_CACHE = {"rates": None, "ts": 0.0, "live": False}
+
+
+def _fetch_rates_sync() -> dict:
+    url = "https://open.er-api.com/v6/latest/KRW"
+    with urllib.request.urlopen(url, timeout=5) as r:
+        data = json.loads(r.read())
+    rates = data.get("rates", {})
+    return {c: rates[c] for c in TARGET_CODES if c in rates}
+
+
+async def get_rates() -> dict:
+    now = time.time()
+    if _RATE_CACHE["rates"] and now - _RATE_CACHE["ts"] < RATE_TTL:
+        return _RATE_CACHE
+    try:
+        rates = await asyncio.to_thread(_fetch_rates_sync)
+        if rates.get("VND") and rates.get("USD"):  # 정상 응답 확인
+            rates["KRW"] = 1.0
+            _RATE_CACHE.update(rates=rates, ts=now, live=True)
+            return _RATE_CACHE
+    except Exception:
+        pass
+    if not _RATE_CACHE["rates"]:  # API 실패 & 캐시 없음 → 폴백
+        _RATE_CACHE.update(rates=dict(FALLBACK_RATES), ts=now, live=False)
+    return _RATE_CACHE
+
 
 app = FastAPI(title="QR Pay Demo")
 templates = Jinja2Templates(directory="templates")
@@ -388,6 +430,18 @@ async def i18n_js():
         json.dumps(I18N, ensure_ascii=False),
     )
     return Response(content=js, media_type="application/javascript; charset=utf-8")
+
+
+@app.get("/api/rates")
+async def api_rates():
+    """실시간 환율 (기준 KRW) + 언어별 통화 매핑."""
+    c = await get_rates()
+    return {
+        "base": "KRW",
+        "rates": c["rates"],
+        "live": c["live"],
+        "currency_by_lang": CURRENCY_BY_LANG,
+    }
 
 
 @app.get("/manifest.json")

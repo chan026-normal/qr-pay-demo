@@ -103,7 +103,14 @@ function getLang(){
 let LANG = getLang();
 let currentStatus = "{{ order.pickup_status or 'received' }}";
 function t(k){ return (window.I18N[LANG] && window.I18N[LANG][k]) || window.I18N.ko[k] || k; }
-function priceFmt(n){ return LANG === 'ko' ? n.toLocaleString('ko-KR') + '원' : '₩' + n.toLocaleString('en-US'); }
+let RATES = { KRW:1, USD:0.00072, VND:18.3, CNY:0.0052, JPY:0.11 };
+let CUR_BY_LANG = { ko:{code:'KRW',locale:'ko-KR'}, vi:{code:'VND',locale:'vi-VN'}, en:{code:'USD',locale:'en-US'}, zh:{code:'CNY',locale:'zh-CN'}, ja:{code:'JPY',locale:'ja-JP'} };
+function priceFmt(krw){
+  const c = CUR_BY_LANG[LANG] || CUR_BY_LANG.ko;
+  const val = krw * (RATES[c.code] || 1);
+  try { return new Intl.NumberFormat(c.locale, {style:'currency', currency:c.code}).format(val); }
+  catch(e){ return Math.round(val).toLocaleString() + ' ' + c.code; }
+}
 function menuName(it){ const m = menuById[it.id]; return (m && m.i18n && m.i18n[LANG]) || it.name; }
 
 function renderItems(){
@@ -148,6 +155,13 @@ const langSel = document.getElementById('langSel');
 langSel.innerHTML = window.LANGS.map(l => `<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
 langSel.addEventListener('change', e => applyLang(e.target.value));
 applyLang(LANG);
+
+// 실시간 환율 불러와 가격 갱신
+fetch('/api/rates').then(r => r.json()).then(d => {
+  if (d.rates) RATES = d.rates;
+  if (d.currency_by_lang) CUR_BY_LANG = d.currency_by_lang;
+  applyLang(LANG);
+}).catch(() => {});
 
 // ── 실시간 상태 ──
 const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
