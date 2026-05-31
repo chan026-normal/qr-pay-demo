@@ -368,10 +368,47 @@ def _item_stats():
     return sorted(stats.values(), key=lambda x: -x["qty"])
 
 
+def _hourly_stats():
+    """시간대(0~23시)별 매출 집계."""
+    hourly: Dict[int, int] = {}
+    for o in HISTORY:
+        if o.paid_at and len(o.paid_at) >= 13:
+            try:
+                h = int(o.paid_at[11:13])
+            except ValueError:
+                continue
+            hourly[h] = hourly.get(h, 0) + o.amount
+    return [{"hour": h, "revenue": hourly[h]} for h in sorted(hourly)]
+
+
+def _method_stats():
+    """결제수단별 건수·매출·비율 집계."""
+    labels = {"card": "카드", "bank": "계좌이체", "point": "포인트", "etc": "기타"}
+    colors = {"card": "#B45309", "bank": "#2563EB", "point": "#059669", "etc": "#78716C"}
+    ms: Dict[str, dict] = {}
+    total = 0
+    for o in HISTORY:
+        m = o.method or "etc"
+        s = ms.setdefault(m, {"method": m, "count": 0, "revenue": 0})
+        s["count"] += 1
+        s["revenue"] += o.amount
+        total += o.amount
+    out = []
+    for m, s in ms.items():
+        s["label"] = labels.get(m, m)
+        s["color"] = colors.get(m, "#78716C")
+        s["pct"] = round(s["revenue"] / total * 100, 1) if total else 0
+        out.append(s)
+    return sorted(out, key=lambda x: -x["revenue"])
+
+
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     stats = _item_stats()
     max_qty = max((s["qty"] for s in stats), default=0)
+    hourly = _hourly_stats()
+    max_hour_rev = max((h["revenue"] for h in hourly), default=0)
+    methods = _method_stats()
     return templates.TemplateResponse(
         "admin.html",
         {
@@ -380,6 +417,9 @@ async def admin_page(request: Request):
             "orders": list(reversed(HISTORY))[:50],
             "item_stats": stats,
             "max_qty": max_qty,
+            "hourly_stats": hourly,
+            "max_hour_rev": max_hour_rev,
+            "method_stats": methods,
         },
     )
 

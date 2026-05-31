@@ -82,6 +82,51 @@
     {% endif %}
   </div>
 
+  <!-- 시간대별 매출 + 결제수단 비율 -->
+  <div class="grid md:grid-cols-2 gap-6 mb-6">
+    <!-- 시간대별 매출 -->
+    <div class="bg-white/90 backdrop-blur rounded-2xl border border-amber-200 p-5">
+      <h2 class="font-black text-stone-900 mb-4">🕐 시간대별 매출</h2>
+      {% if hourly_stats %}
+      <div class="space-y-2">
+        {% for h in hourly_stats %}
+        <div class="flex items-center gap-2 text-sm">
+          <span class="w-9 text-right text-stone-500">{{ h.hour }}시</span>
+          <div class="flex-1 h-4 rounded-full bg-amber-100 overflow-hidden">
+            <div class="h-full rounded-full" style="width: {{ (h.revenue / max_hour_rev * 100)|round(1) if max_hour_rev else 0 }}%; background:linear-gradient(90deg,#D97706,#92400E);"></div>
+          </div>
+          <span class="w-24 text-right text-stone-700">{{ "{:,}".format(h.revenue) }}원</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center text-amber-900/40 py-8 text-sm">데이터 없음</div>
+      {% endif %}
+    </div>
+
+    <!-- 결제수단 비율 -->
+    <div class="bg-white/90 backdrop-blur rounded-2xl border border-amber-200 p-5">
+      <h2 class="font-black text-stone-900 mb-4">💳 결제수단 비율</h2>
+      {% if method_stats %}
+      <div class="space-y-3">
+        {% for m in method_stats %}
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-semibold text-stone-800">{{ m.label }}</span>
+            <span class="text-stone-600"><b class="text-stone-900">{{ m.pct }}%</b> · {{ m.count }}건 · {{ "{:,}".format(m.revenue) }}원</span>
+          </div>
+          <div class="h-3 rounded-full bg-stone-100 overflow-hidden">
+            <div class="h-full rounded-full" style="width: {{ m.pct }}%; background: {{ m.color }};"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center text-amber-900/40 py-8 text-sm">데이터 없음</div>
+      {% endif %}
+    </div>
+  </div>
+
   <div class="bg-white/90 backdrop-blur rounded-2xl border border-amber-200 overflow-hidden">
     <table class="w-full text-sm">
       <thead class="bg-amber-50 text-amber-900/70 text-xs uppercase tracking-wider">
