@@ -59,7 +59,11 @@
   </div>
 
   <!-- 메뉴 -->
-  <div class="mt-5 space-y-2">
+  <div class="mt-5 flex items-center justify-between">
+    <div class="text-sm font-semibold opacity-80" data-i18n="menu_label">메뉴</div>
+    <button id="clearCartBtn" class="hidden text-xs px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20" data-i18n="clear_cart">전체 비우기</button>
+  </div>
+  <div class="mt-2 space-y-2">
     {% for item in menu %}
     <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15 flex items-center gap-3">
       <div class="text-3xl">{{ item.emoji }}</div>
@@ -172,6 +176,8 @@ function refresh(){
   const label = document.getElementById('payLabel');
   if (count() === 0){ payBtn.disabled = true; label.textContent = t('btn_empty'); }
   else { payBtn.disabled = false; label.textContent = t('btn_order').replace('%s', priceFmt(total())); }
+  const clearBtn = document.getElementById('clearCartBtn');
+  if (clearBtn) clearBtn.classList.toggle('hidden', count() === 0);
   updateUpsell();
 }
 
@@ -264,6 +270,13 @@ async function updateUpsell(){
 }
 document.getElementById('upsellChip').addEventListener('click', () => {
   if (currentUpsell){ cart[currentUpsell.id] = (cart[currentUpsell.id]||0) + 1; refresh(); }
+});
+
+// ── 전체 비우기 ──
+document.getElementById('clearCartBtn').addEventListener('click', () => {
+  cart = {};
+  document.getElementById('nlReply').classList.add('hidden');
+  refresh();
 });
 
 applyLang(LANG);

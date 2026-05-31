@@ -78,6 +78,7 @@ I18N = {
         "samsung_guide": "삼성 인터넷에서는 설치 시 안드로이드 보안 차단(\"안전하지 않은 앱\")이 뜰 수 있어요.\n\n• Chrome 으로 열면 정상 설치됩니다.\n• 또는 설치 없이 이 화면에서 바로 주문하셔도 됩니다.",
         "nl_title": "🤖 말로 주문하기", "nl_ph": "예: 워터1 스무디2", "nl_btn": "담기",
         "nl_thinking": "분석 중…", "nl_none": "맞는 메뉴를 찾지 못했어요", "upsell_title": "함께 즐기면 좋아요",
+        "menu_label": "메뉴", "clear_cart": "전체 비우기",
     },
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
@@ -103,6 +104,7 @@ I18N = {
         "samsung_guide": "On Samsung Internet, Android may block the install (\"unsafe app\").\n\n• Open in Chrome to install properly.\n• Or just order here without installing.",
         "nl_title": "🤖 Order by text", "nl_ph": "e.g. 2 cold coconut drinks", "nl_btn": "Add",
         "nl_thinking": "Thinking…", "nl_none": "No matching items found", "upsell_title": "Goes well with",
+        "menu_label": "Menu", "clear_cart": "Clear all",
     },
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
@@ -128,6 +130,7 @@ I18N = {
         "samsung_guide": "Trên Samsung Internet, Android có thể chặn cài đặt (\"ứng dụng không an toàn\").\n\n• Mở bằng Chrome để cài đúng cách.\n• Hoặc đặt món ngay tại đây mà không cần cài.",
         "nl_title": "🤖 Đặt bằng lời", "nl_ph": "vd: 2 ly nước dừa mát", "nl_btn": "Thêm",
         "nl_thinking": "Đang xử lý…", "nl_none": "Không tìm thấy món phù hợp", "upsell_title": "Dùng kèm ngon hơn",
+        "menu_label": "Thực đơn", "clear_cart": "Xóa hết",
     },
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
@@ -153,6 +156,7 @@ I18N = {
         "samsung_guide": "在三星浏览器中，安装可能被 Android 拦截（\"不安全的应用\"）。\n\n• 用 Chrome 打开即可正常安装。\n• 或无需安装，直接在此页面下单。",
         "nl_title": "🤖 用语言点单", "nl_ph": "如：2杯冰椰子饮品", "nl_btn": "添加",
         "nl_thinking": "分析中…", "nl_none": "未找到匹配商品", "upsell_title": "搭配更美味",
+        "menu_label": "菜单", "clear_cart": "全部清空",
     },
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
@@ -178,6 +182,7 @@ I18N = {
         "samsung_guide": "Samsung Internet ではインストール時に Android のセキュリティでブロック（「安全でないアプリ」）されることがあります。\n\n• Chrome で開くと正常にインストールできます。\n• またはインストールせず、この画面でそのまま注文できます。",
         "nl_title": "🤖 言葉で注文", "nl_ph": "例: 冷たいココナッツ2つ", "nl_btn": "追加",
         "nl_thinking": "処理中…", "nl_none": "該当メニューが見つかりません", "upsell_title": "一緒にいかが",
+        "menu_label": "メニュー", "clear_cart": "全て削除",
     },
 }
 
