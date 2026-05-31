@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>{{ store_name }} · 선주문</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #C99068 0%, #8B5A2B 55%, #4A2C1A 100%);
+    background-attachment: fixed;
+  }
+  .fade-in { animation: fade .3s ease-out; }
+  @keyframes fade { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pop { animation: pop .25s ease-out; }
+  @keyframes pop { 0%{transform:scale(.96)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+</style>
+</head>
+<body class="min-h-screen text-white">
+<div class="max-w-md mx-auto min-h-screen flex flex-col p-5">
+
+  <header class="flex items-center justify-between py-3 text-sm opacity-90">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-white/20 grid place-items-center font-black">K</div>
+      <span>킴페이 · 선주문</span>
+    </div>
+    <span class="opacity-70">매장 픽업</span>
+  </header>
+
+  <div class="mt-2">
+    <div class="text-xs uppercase tracking-widest opacity-70">미리 주문하고 픽업하세요</div>
+    <div class="text-2xl font-black mt-1">{{ store_name }}</div>
+  </div>
+
+  <!-- 메뉴 -->
+  <div class="mt-5 space-y-2">
+    {% for item in menu %}
+    <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15 flex items-center gap-3">
+      <div class="text-3xl">{{ item.emoji }}</div>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold">{{ item.name }}</div>
+        <div class="text-sm opacity-80">{{ "{:,}".format(item.price) }}원</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="qty-btn w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 font-bold text-lg" data-id="{{ item.id }}" data-action="dec">−</button>
+        <span class="qty-display w-6 text-center font-bold" data-id="{{ item.id }}">0</span>
+        <button class="qty-btn w-8 h-8 rounded-full bg-white text-amber-900 hover:bg-amber-50 font-bold text-lg" data-id="{{ item.id }}" data-action="inc">+</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- 결제 영역 -->
+  <div class="mt-6 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/15">
+    <div class="text-sm font-semibold mb-2">결제 수단</div>
+    <div id="methods" class="grid grid-cols-3 gap-2 mb-4">
+      <button data-method="card" class="method active py-3 rounded-xl bg-white text-amber-900 font-bold text-sm">카드</button>
+      <button data-method="bank" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm">계좌이체</button>
+      <button data-method="point" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm">포인트</button>
+    </div>
+    <label class="text-sm opacity-80">이름 (선택)</label>
+    <input id="payerName" maxlength="20" placeholder="홍길동"
+           class="mt-1 w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 outline-none placeholder-white/40 focus:border-white/60 text-sm" />
+  </div>
+
+  <div class="mt-auto pt-6 sticky bottom-0">
+    <button id="payBtn" disabled
+            class="w-full py-4 rounded-2xl bg-white text-amber-900 text-lg font-black hover:bg-amber-50 active:scale-[.99] transition disabled:opacity-40 disabled:cursor-not-allowed">
+      <span id="payLabel">메뉴를 담아주세요</span>
+      <span id="paySpin" class="hidden inline-block w-5 h-5 border-2 border-amber-900 border-t-transparent rounded-full spin align-middle ml-2"></span>
+    </button>
+    <div class="text-center text-xs opacity-70 mt-3 mb-2">시연용 모의 결제 · 실제 금액 청구 없음</div>
+  </div>
+</div>
+
+<script>
+const MENU = {{ menu|tojson }};
+const priceById = Object.fromEntries(MENU.map(m => [m.id, m.price]));
+let cart = {}; // {id: qty}
+let selectedMethod = 'card';
+
+function fmt(n){ return Number(n).toLocaleString('ko-KR'); }
+function total(){ return Object.entries(cart).reduce((s,[id,q]) => s + priceById[id]*q, 0); }
+function count(){ return Object.values(cart).reduce((s,q)=>s+q,0); }
+
+function refresh(){
+  document.querySelectorAll('.qty-display').forEach(el => {
+    el.textContent = cart[el.dataset.id] || 0;
+  });
+  const payBtn = document.getElementById('payBtn');
+  const label = document.getElementById('payLabel');
+  if (count() === 0){
+    payBtn.disabled = true;
+    label.textContent = '메뉴를 담아주세요';
+  } else {
+    payBtn.disabled = false;
+    label.textContent = `${fmt(total())}원 주문하기`;
+  }
+}
+
+document.querySelectorAll('.qty-btn').forEach(b => b.addEventListener('click', () => {
+  const id = b.dataset.id;
+  if (b.dataset.action === 'inc'){ cart[id] = (cart[id]||0)+1; b.classList.add('pop'); setTimeout(()=>b.classList.remove('pop'),250); }
+  else { cart[id] = Math.max(0,(cart[id]||0)-1); if(cart[id]===0) delete cart[id]; }
+  refresh();
+}));
+
+document.querySelectorAll('.method').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.method').forEach(x => {
+    x.classList.remove('active','bg-white','text-amber-900');
+    x.classList.add('bg-white/10','border','border-white/20');
+  });
+  b.classList.add('active','bg-white','text-amber-900');
+  b.classList.remove('bg-white/10','border','border-white/20');
+  selectedMethod = b.dataset.method;
+}));
+
+document.getElementById('payBtn').addEventListener('click', async () => {
+  if (count() === 0) return;
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  document.getElementById('payLabel').textContent = '결제 처리 중';
+  document.getElementById('paySpin').classList.remove('hidden');
+  try {
+    const items = Object.entries(cart).map(([id,qty]) => ({id, qty}));
+    const res = await fetch('/api/preorder', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ items, method: selectedMethod, payer_name: document.getElementById('payerName').value, base: location.origin })
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || '주문 실패');
+    const data = await res.json();
+    location.href = data.track_url;  // 주문 추적 화면으로 이동
+  } catch(e){
+    alert(e.message);
+    btn.disabled = false;
+    document.getElementById('payLabel').textContent = '다시 시도';
+    document.getElementById('paySpin').classList.add('hidden');
+  }
+});
+
+refresh();
+</script>
+</body>
+</html>

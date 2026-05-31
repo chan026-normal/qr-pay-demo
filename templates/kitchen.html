@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{ store_name }} · 주방 디스플레이</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #FBF7EC 0%, #F4E8CC 50%, #EAD6A8 100%);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  .card-in { animation: cardin .3s ease-out; }
+  @keyframes cardin { from{opacity:0;transform:translateY(-8px) scale(.98)} to{opacity:1;transform:none} }
+  .flash { animation: flash 1s ease; }
+  @keyframes flash { 0%{box-shadow:0 0 0 0 rgba(180,83,9,.5)} 100%{box-shadow:0 0 0 16px rgba(180,83,9,0)} }
+</style>
+</head>
+<body>
+<div class="max-w-7xl mx-auto p-6">
+
+  <header class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl text-white grid place-items-center font-black text-lg" style="background:linear-gradient(135deg,#8B5A2B,#5C3D2E);">C</div>
+      <div>
+        <div class="text-xs text-amber-800/70">주방 디스플레이</div>
+        <div class="text-xl font-bold text-stone-900">{{ store_name }}</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-sm">
+      <span id="wsStatus" class="px-3 py-2 rounded-lg bg-stone-100 text-stone-500">연결 중…</span>
+      <a href="/order" target="_blank" class="px-3 py-2 rounded-lg bg-white/70 border border-amber-200 hover:bg-white text-stone-700">손님 주문화면</a>
+      <a href="/" class="px-3 py-2 rounded-lg text-white" style="background:linear-gradient(135deg,#8B5A2B,#5C3D2E);">POS</a>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- 신규 접수 -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-black text-stone-800">🆕 신규 접수</h2>
+        <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full" id="cnt-received">0</span>
+      </div>
+      <div id="col-received" class="space-y-3 min-h-[120px]"></div>
+    </div>
+    <!-- 준비 중 -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-black text-stone-800">👨‍🍳 준비 중</h2>
+        <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full" id="cnt-preparing">0</span>
+      </div>
+      <div id="col-preparing" class="space-y-3 min-h-[120px]"></div>
+    </div>
+    <!-- 준비 완료 -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-black text-stone-800">🔔 준비 완료 (픽업 대기)</h2>
+        <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full" id="cnt-ready">0</span>
+      </div>
+      <div id="col-ready" class="space-y-3 min-h-[120px]"></div>
+    </div>
+  </div>
+
+  <div id="emptyHint" class="text-center text-amber-900/40 py-16">아직 들어온 선주문이 없습니다. 손님이 <b>/order</b> 에서 주문하면 여기에 표시됩니다.</div>
+</div>
+
+<script>
+const orders = {}; // id -> order
+const NEXT = { received: "preparing", preparing: "ready", ready: "picked_up" };
+const NEXT_LABEL = { received: "준비 시작", preparing: "준비 완료", ready: "수령 완료" };
+
+function fmt(n){ return Number(n).toLocaleString('ko-KR'); }
+function timeOf(iso){ return (iso||'').slice(11,16); }
+
+function cardHtml(o){
+  const itemsHtml = (o.items||[]).map(i =>
+    `<div class="flex justify-between text-sm"><span class="text-stone-700">${i.name} <b>x${i.qty}</b></span><span class="text-stone-400">${fmt(i.price*i.qty)}원</span></div>`
+  ).join('');
+  const btnLabel = NEXT_LABEL[o.pickup_status];
+  const isReady = o.pickup_status === 'ready';
+  return `
+    <div id="card-${o.order_id}" class="card-in bg-white/95 backdrop-blur rounded-2xl p-4 border ${isReady?'border-emerald-300':'border-amber-200'} shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="text-3xl font-black ${isReady?'text-emerald-600':'text-amber-800'}">#${o.pickup_number}</div>
+        <div class="text-xs text-stone-400">${timeOf(o.paid_at)} · ${o.payer_name||'손님'}</div>
+      </div>
+      <div class="mt-2 space-y-0.5">${itemsHtml}</div>
+      <div class="mt-2 pt-2 border-t border-amber-100 flex items-center justify-between">
+        <span class="font-bold text-stone-900">${fmt(o.amount)}원</span>
+        <button onclick="advance('${o.order_id}')"
+                class="text-sm font-bold px-4 py-2 rounded-lg text-white ${isReady?'bg-emerald-600 hover:bg-emerald-700':''}"
+                ${isReady?'':'style="background:linear-gradient(135deg,#B45309,#78350F);"'}>
+          ${btnLabel} →
+        </button>
+      </div>
+    </div>`;
+}
+
+function render(){
+  const cols = { received: [], preparing: [], ready: [] };
+  Object.values(orders).forEach(o => {
+    if (cols[o.pickup_status]) cols[o.pickup_status].push(o);
+  });
+  let totalActive = 0;
+  for (const status of ['received','preparing','ready']){
+    cols[status].sort((a,b) => (a.pickup_number||0)-(b.pickup_number||0));
+    document.getElementById('col-'+status).innerHTML = cols[status].map(cardHtml).join('');
+    document.getElementById('cnt-'+status).textContent = cols[status].length;
+    totalActive += cols[status].length;
+  }
+  document.getElementById('emptyHint').style.display = totalActive === 0 ? 'block' : 'none';
+}
+
+async function advance(orderId){
+  const o = orders[orderId];
+  if (!o) return;
+  const next = NEXT[o.pickup_status];
+  if (!next) return;
+  await fetch(`/api/order/${orderId}/status`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ status: next })
+  });
+  // 응답 후 WS로도 들어오지만, 즉시 반영
+  if (next === 'picked_up') delete orders[orderId];
+  else o.pickup_status = next;
+  render();
+}
+
+function upsert(o){
+  if (o.pickup_status === 'picked_up') { delete orders[o.order_id]; }
+  else { orders[o.order_id] = o; }
+  render();
+}
+
+// 초기 로드
+fetch('/api/kitchen/orders').then(r => r.json()).then(d => {
+  (d.orders||[]).forEach(o => orders[o.order_id] = o);
+  render();
+});
+
+// 실시간 연결
+const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+let ws;
+function connect(){
+  ws = new WebSocket(`${wsProto}://${location.host}/ws/kitchen`);
+  ws.onopen = () => {
+    const s = document.getElementById('wsStatus');
+    s.textContent = '● 실시간 연결됨'; s.className = 'px-3 py-2 rounded-lg bg-emerald-100 text-emerald-700';
+  };
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'new_order'){
+      upsert(msg.order);
+      const card = document.getElementById('card-'+msg.order.order_id);
+      if (card) card.classList.add('flash');
+    } else if (msg.type === 'status'){
+      upsert(msg.order);
+    } else if (msg.type === 'reset'){
+      for (const k in orders) delete orders[k];
+      render();
+    }
+  };
+  ws.onclose = () => {
+    const s = document.getElementById('wsStatus');
+    s.textContent = '○ 재연결 중…'; s.className = 'px-3 py-2 rounded-lg bg-amber-100 text-amber-700';
+    setTimeout(connect, 2000);
+  };
+}
+connect();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{ store_name }} · 선주문 QR</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #FBF7EC 0%, #F4E8CC 50%, #EAD6A8 100%);
+    background-attachment: fixed; min-height: 100vh;
+  }
+</style>
+</head>
+<body>
+<div class="max-w-md mx-auto min-h-screen flex flex-col items-center justify-center text-center p-6">
+  <div class="flex items-center gap-2 mb-6">
+    <div class="w-9 h-9 rounded-xl text-white grid place-items-center font-black" style="background:linear-gradient(135deg,#8B5A2B,#5C3D2E);">C</div>
+    <span class="text-xl font-black text-stone-900">{{ store_name }}</span>
+  </div>
+
+  <div class="bg-white/90 backdrop-blur rounded-3xl p-8 border border-amber-200 shadow-sm">
+    <div class="text-2xl font-black text-stone-900">📱 미리 주문하고 픽업하세요</div>
+    <div class="text-sm text-amber-900/70 mt-1">QR을 스캔하면 메뉴 주문이 시작됩니다</div>
+    <img src="{{ qr }}" alt="선주문 QR" class="w-72 h-72 mx-auto mt-6 rounded-2xl bg-amber-50 p-3 border border-amber-200" />
+    <div class="mt-4 text-xs text-stone-400 break-all">{{ order_url }}</div>
+  </div>
+
+  <div class="mt-6 flex gap-2 text-sm">
+    <a href="/kitchen" class="px-4 py-2 rounded-lg bg-white/70 border border-amber-200 hover:bg-white text-stone-700">주방 화면</a>
+    <a href="/" class="px-4 py-2 rounded-lg text-white" style="background:linear-gradient(135deg,#8B5A2B,#5C3D2E);">POS</a>
+  </div>
+</div>
+</body>
+</html>

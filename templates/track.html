@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>{{ store_name }} · 주문 #{{ order.pickup_number }}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #C99068 0%, #8B5A2B 55%, #4A2C1A 100%);
+    background-attachment: fixed;
+    transition: background .6s ease;
+  }
+  body.ready { background: linear-gradient(135deg, #34D399 0%, #059669 55%, #065F46 100%); }
+  .fade-in { animation: fade .3s ease-out; }
+  @keyframes fade { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  .pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  .bounce { animation: bounce .6s ease; }
+  @keyframes bounce { 0%{transform:scale(.8);opacity:0} 60%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+</style>
+</head>
+<body class="min-h-screen text-white">
+<div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
+
+  <header class="flex items-center justify-between py-3 text-sm opacity-90">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-white/20 grid place-items-center font-black">K</div>
+      <span>킴페이 · {{ store_name }}</span>
+    </div>
+    <span class="opacity-70">매장 픽업</span>
+  </header>
+
+  <!-- 픽업 번호 -->
+  <div class="mt-6 text-center fade-in">
+    <div class="text-sm uppercase tracking-widest opacity-70">픽업 번호</div>
+    <div class="text-7xl font-black mt-1 pulse" id="pickupNum">#{{ order.pickup_number }}</div>
+    <div class="text-sm opacity-80 mt-1">결제 완료 · {{ "{:,}".format(order.amount) }}원</div>
+  </div>
+
+  <!-- 상태 안내 배너 -->
+  <div id="statusBanner" class="mt-6 bg-white/12 backdrop-blur rounded-2xl p-5 text-center border border-white/15">
+    <div id="statusBig" class="text-2xl font-black">접수되었습니다</div>
+    <div id="statusSub" class="text-sm opacity-80 mt-1">매장에서 주문을 확인하고 있어요</div>
+  </div>
+
+  <!-- 진행 단계 -->
+  <div class="mt-6 grid grid-cols-4 gap-2 text-center text-xs">
+    <div class="step" data-step="received">
+      <div class="dot w-9 h-9 mx-auto rounded-full grid place-items-center font-bold bg-white/15">1</div>
+      <div class="mt-1 opacity-80">접수</div>
+    </div>
+    <div class="step" data-step="preparing">
+      <div class="dot w-9 h-9 mx-auto rounded-full grid place-items-center font-bold bg-white/15">2</div>
+      <div class="mt-1 opacity-80">준비중</div>
+    </div>
+    <div class="step" data-step="ready">
+      <div class="dot w-9 h-9 mx-auto rounded-full grid place-items-center font-bold bg-white/15">3</div>
+      <div class="mt-1 opacity-80">준비완료</div>
+    </div>
+    <div class="step" data-step="picked_up">
+      <div class="dot w-9 h-9 mx-auto rounded-full grid place-items-center font-bold bg-white/15">4</div>
+      <div class="mt-1 opacity-80">수령</div>
+    </div>
+  </div>
+
+  <!-- 주문 내역 -->
+  <div class="mt-6 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/15">
+    <div class="text-sm font-semibold mb-2 opacity-90">주문 내역</div>
+    <div class="space-y-1 text-sm">
+      {% for it in order.items %}
+      <div class="flex justify-between">
+        <span class="opacity-90">{{ it.name }} <span class="opacity-60">x{{ it.qty }}</span></span>
+        <span class="opacity-90">{{ "{:,}".format(it.price * it.qty) }}원</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="border-t border-white/15 mt-3 pt-3 flex justify-between font-bold">
+      <span>합계</span><span>{{ "{:,}".format(order.amount) }}원</span>
+    </div>
+  </div>
+
+  <div class="mt-auto pt-6 text-center text-xs opacity-60">주문번호 <span class="font-mono">{{ order.order_id }}</span></div>
+</div>
+
+<script>
+const ORDER_ID = "{{ order.order_id }}";
+const FLOW = ["received","preparing","ready","picked_up"];
+const TEXT = {
+  received:   { big: "접수되었습니다",        sub: "매장에서 주문을 확인하고 있어요" },
+  preparing:  { big: "준비 중입니다 👨‍🍳",     sub: "맛있게 만들고 있어요. 조금만 기다려주세요" },
+  ready:      { big: "픽업하세요! 🎉",          sub: "준비가 완료되었습니다. 카운터에서 받아가세요" },
+  picked_up:  { big: "수령 완료 ✅",            sub: "이용해 주셔서 감사합니다" },
+};
+
+function render(status){
+  const idx = FLOW.indexOf(status);
+  document.querySelectorAll('.step').forEach(step => {
+    const sIdx = FLOW.indexOf(step.dataset.step);
+    const dot = step.querySelector('.dot');
+    dot.classList.remove('bg-white/15','bg-white','text-amber-900','text-emerald-700');
+    if (sIdx < idx){ dot.classList.add('bg-white','text-amber-900'); dot.textContent = '✓'; }
+    else if (sIdx === idx){ dot.classList.add('bg-white','text-amber-900'); }
+    else { dot.classList.add('bg-white/15'); }
+  });
+  const t = TEXT[status] || TEXT.received;
+  const big = document.getElementById('statusBig');
+  const sub = document.getElementById('statusSub');
+  big.textContent = t.big; sub.textContent = t.sub;
+  big.classList.remove('bounce'); void big.offsetWidth; big.classList.add('bounce');
+
+  if (status === 'ready'){
+    document.body.classList.add('ready');
+    if (navigator.vibrate) navigator.vibrate([200,100,200]);
+  } else {
+    document.body.classList.remove('ready');
+  }
+}
+
+render("{{ order.pickup_status or 'received' }}");
+
+// 실시간 상태 수신
+const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+let ws;
+function connect(){
+  ws = new WebSocket(`${wsProto}://${location.host}/ws/order/${ORDER_ID}`);
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if ((msg.type === 'status' || msg.type === 'snapshot') && msg.order && msg.order.pickup_status){
+      render(msg.order.pickup_status);
+    }
+  };
+  ws.onclose = () => setTimeout(connect, 2000); // 끊기면 재연결
+}
+connect();
+</script>
+</body>
+</html>
