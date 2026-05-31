@@ -32,6 +32,8 @@ STORE_NAME = "coconut.kim"
 STORE_ID = "coco-001"
 # 카카오톡 채널 링크 (환경변수로 교체 가능). 오픈채팅이면 open.kakao.com/o/... 로 바꾸면 됨
 KAKAO_CHANNEL_URL = os.environ.get("KAKAO_CHANNEL_URL", "https://pf.kakao.com/_PTebX")
+# 결제내역 초기화 보호 암호. 설정하면 /admin 초기화에 암호를 요구, 비워두면 암호 없이 동작(하위호환).
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "")
 
 # 메뉴 카탈로그 (name = 한국어 기본값, i18n = 다국어 메뉴명)
 # badge: 수동 배지 ("new"=신메뉴, "reco"=추천, None=없음). "hot"(인기)은 판매량으로 자동 부여.
@@ -824,6 +826,7 @@ async def admin_page(request: Request):
             "max_hour_rev": max_hour_rev,
             "method_stats": methods,
             "menu": MENU,
+            "pin_required": bool(ADMIN_PIN),
         },
     )
 
@@ -1371,8 +1374,15 @@ async def kitchen_orders():
 
 
 @app.post("/api/admin/reset")
-async def admin_reset():
-    """결제 내역 및 활성 주문을 전부 초기화 (시연용)."""
+async def admin_reset(request: Request):
+    """결제 내역 및 활성 주문을 전부 초기화 (시연용). ADMIN_PIN 설정 시 암호 일치 필요."""
+    if ADMIN_PIN:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        if (body or {}).get("pin", "") != ADMIN_PIN:
+            raise HTTPException(status_code=403, detail="암호가 올바르지 않습니다.")
     ORDERS.clear()
     HISTORY.clear()
     SUBSCRIBERS.clear()

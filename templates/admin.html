@@ -221,11 +221,24 @@
   </div>
 
   <script>
+    const PIN_REQUIRED = {{ 'true' if pin_required else 'false' }};
     document.getElementById('resetBtn').addEventListener('click', async () => {
       if (!confirm('정말 모든 결제 내역을 삭제할까요?\n시연용 데모이므로 복구할 수 없습니다.')) return;
-      const res = await fetch('/api/admin/reset', { method: 'POST' });
+      let pin = '';
+      if (PIN_REQUIRED) {
+        const v = prompt('초기화 암호를 입력하세요');
+        if (v === null) return;            // 취소
+        pin = v;
+      }
+      const res = await fetch('/api/admin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+      });
       if (res.ok) {
         location.reload();
+      } else if (res.status === 403) {
+        alert('암호가 올바르지 않습니다.');
       } else {
         alert('초기화 실패. 다시 시도해주세요.');
       }
