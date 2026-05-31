@@ -60,6 +60,16 @@
   </div>
 </div>
 
+<!-- 설치 안내 시트 -->
+<div id="installSheet" class="hidden fixed inset-0 z-50 bg-black/50 flex items-end justify-center">
+  <div class="bg-white text-stone-800 rounded-t-3xl w-full max-w-md p-6 fade-in">
+    <div class="w-10 h-1 bg-stone-300 rounded-full mx-auto mb-4"></div>
+    <div class="text-lg font-black mb-3" data-i18n="start_install">앱 설치하기</div>
+    <div id="installSteps" class="text-sm whitespace-pre-line leading-relaxed text-stone-600"></div>
+    <button id="installClose" class="mt-5 w-full py-3 rounded-xl bg-stone-900 text-white font-bold">OK</button>
+  </div>
+</div>
+
 <script>
 // ── 언어 ──
 function getLang(){
@@ -92,17 +102,28 @@ if ('serviceWorker' in navigator) {
 }
 let deferredPrompt = null;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInApp = /KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|Line\/|NAVER|DaumApps|; wv\)/i.test(navigator.userAgent);
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+window.addEventListener('appinstalled', () => location.href = '/order');
+
+function installGuide(){
+  if (isInApp) return t('inapp_guide');
+  return isIOS ? t('ios_guide') : t('android_guide');
+}
+function showInstallSheet(){
+  document.getElementById('installSteps').textContent = installGuide();
+  document.getElementById('installSheet').classList.remove('hidden');
+}
+document.getElementById('installClose').addEventListener('click', () => document.getElementById('installSheet').classList.add('hidden'));
+
 document.getElementById('installBtn').addEventListener('click', async () => {
   if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     deferredPrompt = null;
     if (outcome === 'accepted') location.href = '/order';
-  } else if (isIOS) {
-    alert(t('ios_guide'));
   } else {
-    alert(t('android_guide'));
+    showInstallSheet();   // 네이티브 프롬프트가 없으면 항상 안내 시트 표시
   }
 });
 </script>

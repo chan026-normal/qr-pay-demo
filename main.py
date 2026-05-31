@@ -60,6 +60,7 @@ I18N = {
         "start_install": "앱 설치하기", "start_skip": "그냥 주문하기 →",
         "ios_guide": "홈 화면에 추가하기\n\n1) 하단 공유 버튼 (□↑) 을 누르세요\n2) \"홈 화면에 추가\" 를 선택하세요\n3) \"추가\" 를 누르면 앱 아이콘이 생깁니다",
         "android_guide": "브라우저 메뉴 (⋮) 에서 \"홈 화면에 추가\" 또는 \"앱 설치\" 를 선택하세요.",
+        "inapp_guide": "카카오톡·인스타 등 앱 내부 브라우저에서는 설치가 안 돼요.\n\n우측 상단 메뉴 (⋮ 또는 ···) → \"다른 브라우저로 열기\" → Chrome 으로 연 뒤 다시 시도해주세요.",
     },
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
@@ -81,6 +82,7 @@ I18N = {
         "start_install": "Install app", "start_skip": "Just order →",
         "ios_guide": "Add to Home Screen\n\n1) Tap the Share button (□↑) at the bottom\n2) Choose \"Add to Home Screen\"\n3) Tap \"Add\" to create the app icon",
         "android_guide": "Open the browser menu (⋮) and choose \"Install app\" or \"Add to Home screen\".",
+        "inapp_guide": "Install isn't supported in in-app browsers (KakaoTalk, Instagram, etc.).\n\nTap the menu (⋮ or ···) → \"Open in browser\" → Chrome, then try again.",
     },
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
@@ -102,6 +104,7 @@ I18N = {
         "start_install": "Cài đặt ứng dụng", "start_skip": "Đặt món luôn →",
         "ios_guide": "Thêm vào Màn hình chính\n\n1) Nhấn nút Chia sẻ (□↑) ở dưới\n2) Chọn \"Thêm vào MH chính\"\n3) Nhấn \"Thêm\" để tạo biểu tượng",
         "android_guide": "Mở menu trình duyệt (⋮) và chọn \"Cài ứng dụng\" hoặc \"Thêm vào MH chính\".",
+        "inapp_guide": "Không thể cài trong trình duyệt trong ứng dụng (KakaoTalk, Instagram...).\n\nNhấn menu (⋮ hoặc ···) → \"Mở bằng trình duyệt\" → Chrome, rồi thử lại.",
     },
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
@@ -123,6 +126,7 @@ I18N = {
         "start_install": "安装应用", "start_skip": "直接下单 →",
         "ios_guide": "添加到主屏幕\n\n1) 点击底部分享按钮 (□↑)\n2) 选择\"添加到主屏幕\"\n3) 点击\"添加\"即可生成应用图标",
         "android_guide": "打开浏览器菜单 (⋮)，选择\"安装应用\"或\"添加到主屏幕\"。",
+        "inapp_guide": "应用内置浏览器（KakaoTalk、Instagram 等）无法安装。\n\n点击右上角菜单 (⋮ 或 ···) →\"用浏览器打开\"→ Chrome，然后重试。",
     },
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
@@ -144,6 +148,7 @@ I18N = {
         "start_install": "アプリをインストール", "start_skip": "そのまま注文 →",
         "ios_guide": "ホーム画面に追加\n\n1) 下部の共有ボタン (□↑) をタップ\n2) 「ホーム画面に追加」を選択\n3) 「追加」をタップするとアイコンが作成されます",
         "android_guide": "ブラウザメニュー (⋮) から「アプリをインストール」または「ホーム画面に追加」を選択してください。",
+        "inapp_guide": "アプリ内ブラウザ（KakaoTalk、Instagram など）ではインストールできません。\n\n右上のメニュー (⋮ または ···) →「ブラウザで開く」→ Chrome を選んで再度お試しください。",
     },
 }
 
