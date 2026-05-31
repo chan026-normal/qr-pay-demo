@@ -32,14 +32,15 @@ STORE_NAME = "coconut.kim"
 STORE_ID = "coco-001"
 
 # 메뉴 카탈로그 (name = 한국어 기본값, i18n = 다국어 메뉴명)
+# badge: 수동 배지 ("new"=신메뉴, "reco"=추천, None=없음). "hot"(인기)은 판매량으로 자동 부여.
 MENU = [
-    {"id": "smoothie", "name": "코코넛 스무디", "price": 4500, "emoji": "🥥",
+    {"id": "smoothie", "name": "코코넛 스무디", "price": 4500, "emoji": "🥥", "badge": None,
      "i18n": {"ko": "코코넛 스무디", "en": "Coconut Smoothie", "vi": "Sinh tố dừa",
               "zh": "椰子冰沙", "ja": "ココナッツスムージー"}},
-    {"id": "water", "name": "코코넛 워터", "price": 2500, "emoji": "💧",
+    {"id": "water", "name": "코코넛 워터", "price": 2500, "emoji": "💧", "badge": None,
      "i18n": {"ko": "코코넛 워터", "en": "Coconut Water", "vi": "Nước dừa",
               "zh": "椰子水", "ja": "ココナッツウォーター"}},
-    {"id": "chip", "name": "코코넛 칩", "price": 3000, "emoji": "🍪",
+    {"id": "chip", "name": "코코넛 칩", "price": 3000, "emoji": "🍪", "badge": "new",
      "i18n": {"ko": "코코넛 칩", "en": "Coconut Chips", "vi": "Chip dừa",
               "zh": "椰子脆片", "ja": "ココナッツチップス"}},
 ]
@@ -80,6 +81,11 @@ I18N = {
         "nl_thinking": "분석 중…", "nl_none": "맞는 메뉴를 찾지 못했어요", "upsell_title": "함께 즐기면 좋아요",
         "menu_label": "메뉴", "clear_cart": "전체 비우기",
         "reset_order": "🔄 주문 초기화", "nl_reset_done": "주문을 초기화했어요",
+        "badge_hot": "🔥 인기", "badge_new": "✨ 신메뉴", "badge_reco": "👍 추천",
+        "stamp_title": "스탬프 적립", "stamp_free": "🎁 무료 음료 쿠폰 획득!",
+        "stamp_progress": "%s잔 더 모으면 무료 음료 🎁",
+        "share_btn": "📲 공유하기", "share_text": "coconut.kim에서 코코넛 음료 즐겼어요 🥥",
+        "share_copied": "공유 링크를 복사했어요!",
     },
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
@@ -107,6 +113,11 @@ I18N = {
         "nl_thinking": "Thinking…", "nl_none": "No matching items found", "upsell_title": "Goes well with",
         "menu_label": "Menu", "clear_cart": "Clear all",
         "reset_order": "🔄 Reset order", "nl_reset_done": "Order cleared",
+        "badge_hot": "🔥 Popular", "badge_new": "✨ New", "badge_reco": "👍 Pick",
+        "stamp_title": "Stamps", "stamp_free": "🎁 Free drink coupon earned!",
+        "stamp_progress": "%s more for a free drink 🎁",
+        "share_btn": "📲 Share", "share_text": "Enjoying coconut drinks at coconut.kim 🥥",
+        "share_copied": "Link copied!",
     },
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
@@ -134,6 +145,11 @@ I18N = {
         "nl_thinking": "Đang xử lý…", "nl_none": "Không tìm thấy món phù hợp", "upsell_title": "Dùng kèm ngon hơn",
         "menu_label": "Thực đơn", "clear_cart": "Xóa hết",
         "reset_order": "🔄 Đặt lại đơn", "nl_reset_done": "Đã xóa đơn hàng",
+        "badge_hot": "🔥 Phổ biến", "badge_new": "✨ Mới", "badge_reco": "👍 Đề xuất",
+        "stamp_title": "Tem tích lũy", "stamp_free": "🎁 Nhận phiếu đồ uống miễn phí!",
+        "stamp_progress": "Thêm %s ly để được tặng đồ uống 🎁",
+        "share_btn": "📲 Chia sẻ", "share_text": "Thưởng thức đồ uống dừa tại coconut.kim 🥥",
+        "share_copied": "Đã sao chép liên kết!",
     },
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
@@ -161,6 +177,11 @@ I18N = {
         "nl_thinking": "分析中…", "nl_none": "未找到匹配商品", "upsell_title": "搭配更美味",
         "menu_label": "菜单", "clear_cart": "全部清空",
         "reset_order": "🔄 重新下单", "nl_reset_done": "已清空订单",
+        "badge_hot": "🔥 热门", "badge_new": "✨ 新品", "badge_reco": "👍 推荐",
+        "stamp_title": "集点", "stamp_free": "🎁 获得免费饮品券！",
+        "stamp_progress": "再集 %s 杯即可免费 🎁",
+        "share_btn": "📲 分享", "share_text": "在 coconut.kim 享用椰子饮品 🥥",
+        "share_copied": "已复制链接！",
     },
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
@@ -188,6 +209,11 @@ I18N = {
         "nl_thinking": "処理中…", "nl_none": "該当メニューが見つかりません", "upsell_title": "一緒にいかが",
         "menu_label": "メニュー", "clear_cart": "全て削除",
         "reset_order": "🔄 注文リセット", "nl_reset_done": "注文をリセットしました",
+        "badge_hot": "🔥 人気", "badge_new": "✨ 新商品", "badge_reco": "👍 おすすめ",
+        "stamp_title": "スタンプ", "stamp_free": "🎁 無料ドリンク券を獲得！",
+        "stamp_progress": "あと %s 杯で無料ドリンク 🎁",
+        "share_btn": "📲 シェア", "share_text": "coconut.kim でココナッツドリンク 🥥",
+        "share_copied": "リンクをコピーしました！",
     },
 }
 
@@ -366,6 +392,31 @@ HISTORY: List[Order] = []
 SUBSCRIBERS: Dict[str, List[WebSocket]] = {}
 KITCHEN_SUBSCRIBERS: List[WebSocket] = []
 PICKUP_COUNTER = {"n": 0}
+
+# 스탬프 적립 (시연용: 결제할 때마다 전체 +1, 10개=무료 음료)
+STAMP_GOAL = 10
+STAMPS = {"count": 0}
+
+
+def stamp_state() -> dict:
+    c = STAMPS["count"]
+    filled = c % STAMP_GOAL
+    free = c > 0 and filled == 0
+    if free:
+        filled = STAMP_GOAL
+    return {"count": c, "goal": STAMP_GOAL, "filled": filled, "free": free}
+
+
+def hot_item_ids() -> List[str]:
+    """판매량 1위 메뉴 id (자동 '인기' 배지용)."""
+    pop: Dict[str, int] = {}
+    for o in HISTORY:
+        for it in o.items:
+            pop[it["id"]] = pop.get(it["id"], 0) + it["qty"]
+    if not pop:
+        return []
+    top = max(pop.values())
+    return [k for k, v in pop.items() if v == top and v > 0][:1]
 
 
 def next_pickup_number() -> int:
@@ -836,6 +887,7 @@ async def order_page(request: Request):
             "store_name": STORE_NAME,
             "menu": MENU,
             "langs": LANGS,
+            "hot_ids": hot_item_ids(),
         },
     )
 
@@ -952,6 +1004,7 @@ async def track_page(request: Request, order_id: str):
             "order": order,
             "menu": MENU,
             "langs": LANGS,
+            "stamps": stamp_state(),
         },
     )
 
@@ -1039,9 +1092,10 @@ async def pay_order(order_id: str, payload: dict):
     order.payer_name = payer_name
     order.method = method
     HISTORY.append(order)
+    STAMPS["count"] += 1
 
     await broadcast(order_id, {"type": "paid", "order": order.__dict__})
-    return {"ok": True, "order": order.__dict__}
+    return {"ok": True, "order": order.__dict__, "stamps": stamp_state()}
 
 
 @app.post("/api/preorder")
@@ -1090,6 +1144,7 @@ async def create_preorder(payload: dict):
     )
     ORDERS[order_id] = order
     HISTORY.append(order)
+    STAMPS["count"] += 1
 
     base = (payload.get("base") or "").rstrip("/")
     track_url = f"{base}/track/{order_id}" if base else f"/track/{order_id}"
@@ -1145,6 +1200,7 @@ async def admin_reset():
     HISTORY.clear()
     SUBSCRIBERS.clear()
     PICKUP_COUNTER["n"] = 0
+    STAMPS["count"] = 0
     await broadcast_kitchen({"type": "reset"})
     return {"ok": True, "message": "모든 결제 내역이 초기화되었습니다."}
 

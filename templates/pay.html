@@ -78,7 +78,9 @@
     <div class="mt-6 text-2xl font-black">결제가 완료되었습니다</div>
     <div class="mt-1 text-4xl font-black">{{ "{:,}".format(order.amount) }}원</div>
     <div class="mt-1 text-sm opacity-80">{{ store_name }}</div>
-    <div class="mt-8 text-xs opacity-60">영수증은 가맹점 화면에서 확인됩니다.</div>
+    <div id="payStamp" class="mt-5 text-sm opacity-90"></div>
+    <button id="payShareBtn" class="mt-4 px-6 py-3 rounded-xl bg-white text-amber-900 font-bold hover:bg-amber-50 active:scale-[.99] transition">📲 공유하기</button>
+    <div class="mt-6 text-xs opacity-60">영수증은 가맹점 화면에서 확인됩니다.</div>
   </div>
 </div>
 
@@ -108,14 +110,34 @@ payBtn.addEventListener('click', async () => {
       })
     });
     if (!res.ok) throw new Error((await res.json()).detail || '결제 실패');
+    const data = await res.json();
     document.getElementById('pendingView').classList.add('hidden');
     document.getElementById('doneView').classList.remove('hidden');
     document.getElementById('doneView').classList.add('flex');
+    if (data.stamps){
+      const s = data.stamps;
+      document.getElementById('payStamp').textContent = s.free
+        ? '🎁 무료 음료 쿠폰 획득!'
+        : `스탬프 ${s.filled}/${s.goal} · ${s.goal - s.filled}잔 더 모으면 무료 음료 🎁`;
+    }
   } catch (e) {
     alert(e.message);
     payBtn.disabled = false;
     document.getElementById('payLabel').textContent = '다시 시도';
     document.getElementById('paySpin').classList.add('hidden');
+  }
+});
+
+// 📲 공유
+document.getElementById('payShareBtn').addEventListener('click', () => {
+  const url = location.origin + '/start';
+  const text = 'coconut.kim에서 코코넛 음료 즐겼어요 🥥';
+  if (navigator.share){
+    navigator.share({ title: 'coconut.kim', text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text + ' ' + url)
+      .then(() => alert('공유 링크를 복사했어요!'))
+      .catch(() => alert(text + ' ' + url));
   }
 });
 </script>

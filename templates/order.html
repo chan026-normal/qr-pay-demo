@@ -69,7 +69,10 @@
     <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15 flex items-center gap-3">
       <div class="text-3xl">{{ item.emoji }}</div>
       <div class="flex-1 min-w-0">
-        <div class="font-bold menu-name" data-id="{{ item.id }}">{{ item.name }}</div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="font-bold menu-name" data-id="{{ item.id }}">{{ item.name }}</span>
+          <span class="menu-badge hidden text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/90 text-amber-950 font-bold whitespace-nowrap" data-id="{{ item.id }}"></span>
+        </div>
         <div class="text-sm opacity-80 menu-price" data-price="{{ item.price }}"></div>
       </div>
       <div class="flex items-center gap-2">
@@ -126,8 +129,16 @@
 
 <script>
 const MENU = {{ menu|tojson }};
+const HOT_IDS = {{ hot_ids|tojson }};
 const priceById = Object.fromEntries(MENU.map(m => [m.id, m.price]));
 const menuById = Object.fromEntries(MENU.map(m => [m.id, m]));
+function badgeText(item){
+  if (!item) return '';
+  if (item.badge === 'new') return t('badge_new');
+  if (item.badge === 'reco') return t('badge_reco');
+  if (HOT_IDS.includes(item.id)) return t('badge_hot');
+  return '';
+}
 let cart = {};
 let selectedMethod = 'card';
 let currentUpsell = null;
@@ -159,6 +170,11 @@ function applyLang(lang){
   document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
   document.querySelectorAll('.menu-name').forEach(el => el.textContent = menuName(el.dataset.id));
   document.querySelectorAll('.menu-price').forEach(el => el.textContent = priceFmt(Number(el.dataset.price)));
+  document.querySelectorAll('.menu-badge').forEach(el => {
+    const txt = badgeText(menuById[el.dataset.id]);
+    el.textContent = txt;
+    el.classList.toggle('hidden', !txt);
+  });
   const sel = document.getElementById('langSel'); if (sel) sel.value = lang;
   refresh();
 }
