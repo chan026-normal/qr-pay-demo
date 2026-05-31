@@ -30,6 +30,8 @@ from fastapi.templating import Jinja2Templates
 
 STORE_NAME = "coconut.kim"
 STORE_ID = "coco-001"
+# 카카오톡 채널 링크 (환경변수로 교체 가능). 오픈채팅이면 open.kakao.com/o/... 로 바꾸면 됨
+KAKAO_CHANNEL_URL = os.environ.get("KAKAO_CHANNEL_URL", "https://pf.kakao.com/_PTebX")
 
 # 메뉴 카탈로그 (name = 한국어 기본값, i18n = 다국어 메뉴명)
 # badge: 수동 배지 ("new"=신메뉴, "reco"=추천, None=없음). "hot"(인기)은 판매량으로 자동 부여.
@@ -85,7 +87,7 @@ I18N = {
         "stamp_title": "스탬프 적립", "stamp_free": "🎁 무료 음료 쿠폰 획득!",
         "stamp_progress": "%s잔 더 모으면 무료 음료 🎁",
         "share_btn": "📲 공유하기", "share_text": "coconut.kim에서 코코넛 음료 즐겼어요 🥥",
-        "share_copied": "공유 링크를 복사했어요!",
+        "share_copied": "공유 링크를 복사했어요!", "kakao_btn": "💬 카카오톡 채널",
     },
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
@@ -117,7 +119,7 @@ I18N = {
         "stamp_title": "Stamps", "stamp_free": "🎁 Free drink coupon earned!",
         "stamp_progress": "%s more for a free drink 🎁",
         "share_btn": "📲 Share", "share_text": "Enjoying coconut drinks at coconut.kim 🥥",
-        "share_copied": "Link copied!",
+        "share_copied": "Link copied!", "kakao_btn": "💬 KakaoTalk Channel",
     },
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
@@ -149,7 +151,7 @@ I18N = {
         "stamp_title": "Tem tích lũy", "stamp_free": "🎁 Nhận phiếu đồ uống miễn phí!",
         "stamp_progress": "Thêm %s ly để được tặng đồ uống 🎁",
         "share_btn": "📲 Chia sẻ", "share_text": "Thưởng thức đồ uống dừa tại coconut.kim 🥥",
-        "share_copied": "Đã sao chép liên kết!",
+        "share_copied": "Đã sao chép liên kết!", "kakao_btn": "💬 Kênh KakaoTalk",
     },
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
@@ -181,7 +183,7 @@ I18N = {
         "stamp_title": "集点", "stamp_free": "🎁 获得免费饮品券！",
         "stamp_progress": "再集 %s 杯即可免费 🎁",
         "share_btn": "📲 分享", "share_text": "在 coconut.kim 享用椰子饮品 🥥",
-        "share_copied": "已复制链接！",
+        "share_copied": "已复制链接！", "kakao_btn": "💬 KakaoTalk 频道",
     },
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
@@ -213,7 +215,7 @@ I18N = {
         "stamp_title": "スタンプ", "stamp_free": "🎁 無料ドリンク券を獲得！",
         "stamp_progress": "あと %s 杯で無料ドリンク 🎁",
         "share_btn": "📲 シェア", "share_text": "coconut.kim でココナッツドリンク 🥥",
-        "share_copied": "リンクをコピーしました！",
+        "share_copied": "リンクをコピーしました！", "kakao_btn": "💬 カカオチャンネル",
     },
 }
 
@@ -873,6 +875,7 @@ async def pay_page(request: Request, order_id: str):
             "request": request,
             "store_name": STORE_NAME,
             "order": order,
+            "kakao_url": KAKAO_CHANNEL_URL,
         },
     )
 
@@ -1005,6 +1008,7 @@ async def track_page(request: Request, order_id: str):
             "menu": MENU,
             "langs": LANGS,
             "stamps": stamp_state(),
+            "kakao_url": KAKAO_CHANNEL_URL,
         },
     )
 
