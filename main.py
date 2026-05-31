@@ -436,6 +436,99 @@ def hot_item_ids() -> List[str]:
     return [k for k, v in pop.items() if v == top and v > 0][:1]
 
 
+# ── 데이터베이스 (선택) ──────────────────────────────────────────────
+# DATABASE_URL 환경변수가 있으면 주문·배지를 영구 저장. 없으면 메모리만 사용(기존 동작).
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+_engine = None
+if DATABASE_URL:
+    try:
+        from sqlalchemy import create_engine, text as _sql
+        _url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        _engine = create_engine(_url, pool_pre_ping=True)
+        with _engine.begin() as _c:
+            _c.execute(_sql("CREATE TABLE IF NOT EXISTS orders (order_id TEXT PRIMARY KEY, json TEXT NOT NULL, paid_at TEXT)"))
+            _c.execute(_sql("CREATE TABLE IF NOT EXISTS menu_badges (item_id TEXT PRIMARY KEY, badge TEXT)"))
+        print("[DB] connected — 영구 저장 활성화")
+    except Exception as e:
+        _engine = None
+        print(f"[DB] 연결 실패 → 메모리 모드로 동작: {e}")
+
+DB_ENABLED = _engine is not None
+
+
+def db_save_order(order: "Order") -> None:
+    if not DB_ENABLED:
+        return
+    try:
+        from sqlalchemy import text as _sql
+        with _engine.begin() as c:
+            c.execute(
+                _sql("INSERT INTO orders (order_id, json, paid_at) VALUES (:oid, :j, :p) "
+                     "ON CONFLICT (order_id) DO UPDATE SET json = :j, paid_at = :p"),
+                {"oid": order.order_id, "j": json.dumps(order.__dict__, ensure_ascii=False), "p": order.paid_at},
+            )
+    except Exception as e:
+        print(f"[DB] save_order error: {e}")
+
+
+def db_save_badge(item_id: str, badge) -> None:
+    if not DB_ENABLED:
+        return
+    try:
+        from sqlalchemy import text as _sql
+        with _engine.begin() as c:
+            c.execute(
+                _sql("INSERT INTO menu_badges (item_id, badge) VALUES (:i, :b) "
+                     "ON CONFLICT (item_id) DO UPDATE SET badge = :b"),
+                {"i": item_id, "b": badge},
+            )
+    except Exception as e:
+        print(f"[DB] save_badge error: {e}")
+
+
+def db_clear_orders() -> None:
+    if not DB_ENABLED:
+        return
+    try:
+        from sqlalchemy import text as _sql
+        with _engine.begin() as c:
+            c.execute(_sql("DELETE FROM orders"))
+    except Exception as e:
+        print(f"[DB] clear error: {e}")
+
+
+def db_load() -> None:
+    """서버 시작 시 DB에서 주문·배지를 메모리로 복원."""
+    if not DB_ENABLED:
+        return
+    try:
+        from sqlalchemy import text as _sql
+        fields = set(Order.__dataclass_fields__)
+        with _engine.begin() as c:
+            rows = c.execute(_sql("SELECT json FROM orders ORDER BY paid_at")).fetchall()
+            for (j,) in rows:
+                d = json.loads(j)
+                o = Order(**{k: v for k, v in d.items() if k in fields})
+                ORDERS[o.order_id] = o
+                if o.status == "paid":
+                    HISTORY.append(o)
+                if o.pickup_number:
+                    PICKUP_COUNTER["n"] = max(PICKUP_COUNTER["n"], o.pickup_number)
+            STAMPS["count"] = sum(1 + (o.amount // STAMP_PER_AMOUNT) for o in HISTORY)
+            bmap = dict(c.execute(_sql("SELECT item_id, badge FROM menu_badges")).fetchall())
+            for m in MENU:
+                if m["id"] in bmap:
+                    m["badge"] = bmap[m["id"]]
+        print(f"[DB] 복원 완료 — 주문 {len(HISTORY)}건, 스탬프 {STAMPS['count']}개")
+    except Exception as e:
+        print(f"[DB] load error: {e}")
+
+
+@app.on_event("startup")
+async def _on_startup():
+    db_load()
+
+
 def next_pickup_number() -> int:
     PICKUP_COUNTER["n"] += 1
     return PICKUP_COUNTER["n"]
@@ -715,6 +808,7 @@ async def set_badge(payload: dict):
     for m in MENU:
         if m["id"] == item_id:
             m["badge"] = badge
+            db_save_badge(item_id, badge)
             return {"ok": True, "id": item_id, "badge": badge}
     raise HTTPException(status_code=404, detail="메뉴를 찾을 수 없습니다.")
 
@@ -1141,6 +1235,7 @@ async def pay_order(order_id: str, payload: dict):
     order.method = method
     HISTORY.append(order)
     earned = earn_stamps(order.amount)
+    db_save_order(order)
 
     await broadcast(order_id, {"type": "paid", "order": order.__dict__})
     return {"ok": True, "order": order.__dict__, "stamps": stamp_state(), "earned": earned}
@@ -1193,6 +1288,7 @@ async def create_preorder(payload: dict):
     ORDERS[order_id] = order
     HISTORY.append(order)
     earn_stamps(amount)
+    db_save_order(order)
 
     base = (payload.get("base") or "").rstrip("/")
     track_url = f"{base}/track/{order_id}" if base else f"/track/{order_id}"
@@ -1249,6 +1345,7 @@ async def admin_reset():
     SUBSCRIBERS.clear()
     PICKUP_COUNTER["n"] = 0
     STAMPS["count"] = 0
+    db_clear_orders()
     await broadcast_kitchen({"type": "reset"})
     return {"ok": True, "message": "모든 결제 내역이 초기화되었습니다."}
 
