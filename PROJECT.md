@@ -30,6 +30,7 @@
 | `KAKAO_CHANNEL_URL` | 카톡 채널 버튼 링크 | 기본 pf.kakao.com/_PTebX. **Zalo 링크로 교체 가능** |
 | `TZ_OFFSET_HOURS` | 매장 표준시 | 기본 9(KST). 베트남이면 7 |
 | `OPENAI_MODEL` | 모델명 | 기본 gpt-4o-mini |
+| `ADMIN_PIN` | /admin 결제내역 초기화 암호 | 설정 시 초기화에 암호 요구. 비우면 암호 없이 동작(하위호환) |
 
 ## 화면(라우트)
 - `/` 가맹점 POS (직원)
