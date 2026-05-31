@@ -60,7 +60,8 @@ I18N = {
     "ko": {
         "brand_sub": "선주문", "pickup_store": "매장 픽업",
         "order_title": "미리 주문하고 픽업하세요",
-        "pay_method": "결제 수단", "m_card": "카드", "m_bank": "계좌이체", "m_point": "포인트",
+        "pay_method": "결제 수단", "m_card": "카드", "m_cash": "현금",
+        "m_momo": "MoMo", "m_zalopay": "ZaloPay", "m_mobilepay": "간편결제",
         "name_label": "이름 (선택)", "name_ph": "홍길동",
         "btn_empty": "메뉴를 담아주세요", "btn_order": "%s 주문하기",
         "btn_processing": "결제 처리 중", "btn_retry": "다시 시도",
@@ -93,7 +94,8 @@ I18N = {
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
         "order_title": "Order ahead & pick up",
-        "pay_method": "Payment", "m_card": "Card", "m_bank": "Transfer", "m_point": "Points",
+        "pay_method": "Payment", "m_card": "Card", "m_cash": "Cash",
+        "m_momo": "MoMo", "m_zalopay": "ZaloPay", "m_mobilepay": "Mobile Pay",
         "name_label": "Name (optional)", "name_ph": "Your name",
         "btn_empty": "Add items to order", "btn_order": "Order %s",
         "btn_processing": "Processing…", "btn_retry": "Try again",
@@ -126,7 +128,8 @@ I18N = {
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
         "order_title": "Đặt trước và đến lấy",
-        "pay_method": "Thanh toán", "m_card": "Thẻ", "m_bank": "Chuyển khoản", "m_point": "Điểm",
+        "pay_method": "Thanh toán", "m_card": "Thẻ", "m_cash": "Tiền mặt",
+        "m_momo": "MoMo", "m_zalopay": "ZaloPay", "m_mobilepay": "Ví điện tử",
         "name_label": "Tên (tùy chọn)", "name_ph": "Tên của bạn",
         "btn_empty": "Hãy chọn món", "btn_order": "Đặt hàng %s",
         "btn_processing": "Đang xử lý…", "btn_retry": "Thử lại",
@@ -159,7 +162,8 @@ I18N = {
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
         "order_title": "提前下单，到店自取",
-        "pay_method": "支付方式", "m_card": "银行卡", "m_bank": "转账", "m_point": "积分",
+        "pay_method": "支付方式", "m_card": "银行卡", "m_cash": "现金",
+        "m_momo": "MoMo", "m_zalopay": "ZaloPay", "m_mobilepay": "手机支付",
         "name_label": "姓名（选填）", "name_ph": "您的姓名",
         "btn_empty": "请选择商品", "btn_order": "下单 %s",
         "btn_processing": "处理中…", "btn_retry": "重试",
@@ -192,7 +196,8 @@ I18N = {
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
         "order_title": "事前に注文して受け取り",
-        "pay_method": "支払い方法", "m_card": "カード", "m_bank": "振込", "m_point": "ポイント",
+        "pay_method": "支払い方法", "m_card": "カード", "m_cash": "現金",
+        "m_momo": "MoMo", "m_zalopay": "ZaloPay", "m_mobilepay": "モバイル決済",
         "name_label": "お名前（任意）", "name_ph": "お名前",
         "btn_empty": "メニューを選んでください", "btn_order": "%s を注文",
         "btn_processing": "処理中…", "btn_retry": "再試行",
@@ -232,6 +237,29 @@ CURRENCY_BY_LANG = {
     "zh": {"code": "CNY", "locale": "zh-CN"},
     "ja": {"code": "JPY", "locale": "ja-JP"},
 }
+
+# 결제수단 카탈로그 (key = 저장·통계용 식별자, color = admin 차트색).
+# 라벨은 I18N의 "m_<key>" 키로 다국어 처리. 고유명사(MoMo/ZaloPay)는 전 언어 동일.
+PAYMENT_METHODS = {
+    "momo":      {"color": "#A50064"},  # 베트남 1위 전자지갑
+    "zalopay":   {"color": "#0068FF"},  # Zalo 메신저 내장 결제
+    "cash":      {"color": "#16A34A"},  # 현금
+    "card":      {"color": "#B45309"},  # 해외 신용/체크카드 (Visa·Master)
+    "mobilepay": {"color": "#1F2937"},  # Apple/Google Pay 등 간편결제
+}
+# 언어별 노출 결제수단 — 타깃 고객층에 맞춤.
+#   vi(현지 Gen Z): 현지에서 일상적으로 쓰는 MoMo·ZaloPay·현금
+#   외국어(관광객): 베트남 e-wallet은 현지 은행계좌가 있어야 충전돼 사실상 못 씀.
+#                   → 실제로 쓰는 해외카드·현금·간편결제(Apple/Google Pay)로 노출.
+PAYMENT_BY_LANG = {
+    "vi": ["momo", "zalopay", "cash"],
+    "ko": ["card", "cash", "mobilepay"],
+    "en": ["card", "cash", "mobilepay"],
+    "zh": ["card", "cash", "mobilepay"],
+    "ja": ["card", "cash", "mobilepay"],
+}
+DEFAULT_METHODS = ["card", "cash", "mobilepay"]  # 미정의 언어 폴백
+
 TARGET_CODES = ["KRW", "USD", "VND", "CNY", "JPY"]
 # 폴백 환율 (1 KRW 당) — 실시간 API 실패 시 사용 (대략값, 데모 안전망)
 FALLBACK_RATES = {"KRW": 1.0, "USD": 0.00072, "VND": 18.3, "CNY": 0.0052, "JPY": 0.11}
@@ -692,8 +720,10 @@ def _hourly_stats():
 
 def _method_stats():
     """결제수단별 건수·매출·비율 집계."""
-    labels = {"card": "카드", "bank": "계좌이체", "point": "포인트", "etc": "기타"}
-    colors = {"card": "#B45309", "bank": "#2563EB", "point": "#059669", "etc": "#78716C"}
+    labels = {"momo": "MoMo", "zalopay": "ZaloPay", "cash": "현금", "card": "카드",
+              "mobilepay": "간편결제", "bank": "계좌이체", "point": "포인트", "etc": "기타"}
+    colors = {k: v["color"] for k, v in PAYMENT_METHODS.items()}
+    colors.update({"bank": "#2563EB", "point": "#059669", "etc": "#78716C"})
     ms: Dict[str, dict] = {}
     total = 0
     for o in HISTORY:
@@ -765,9 +795,9 @@ def _smart_insights():
         combos.append("함께 주문 데이터 부족 — 주문 쌓이면 세트 추천")
 
     # 💡 실행 추천
-    point = next((m for m in method_stats if m["method"] == "point"), None)
-    if not point or point["pct"] < 15:
-        recommendations.append("포인트 결제 낮음 → 적립 이벤트로 재방문 유도")
+    cash = next((m for m in method_stats if m["method"] == "cash"), None)
+    if cash and cash["pct"] >= 50:
+        recommendations.append("현금 결제 비중 높음 → MoMo·ZaloPay 간편결제 유도로 회전율↑·정산 간소화")
     if item_stats and total_rev and round(item_stats[0]["revenue"] / total_rev * 100) > 55:
         recommendations.append(f"{item_stats[0]['name']} 의존도 높음 → 다른 메뉴 프로모션으로 분산")
     recommendations.append("외국어 주문 비중 관찰 → 인기 언어권 현지화 마케팅")
@@ -983,7 +1013,8 @@ async def export_csv():
     buf.write("﻿")  # Excel에서 한글 깨짐 방지
     w = csv.writer(buf)
     w.writerow(["결제시각", "주문번호", "유형", "픽업번호", "품목", "결제수단", "손님", "금액(원)"])
-    method_kr = {"card": "카드", "bank": "계좌이체", "point": "포인트"}
+    method_kr = {"momo": "MoMo", "zalopay": "ZaloPay", "cash": "현금", "card": "카드",
+                 "mobilepay": "간편결제", "bank": "계좌이체", "point": "포인트"}
     for o in HISTORY:
         typ = "선주문" if o.order_type == "preorder" else "POS"
         items_str = ", ".join(f"{it['name']} x{it['qty']}" for it in o.items) or o.memo
@@ -1072,9 +1103,11 @@ async def start_page(request: Request):
 @app.get("/i18n.js")
 async def i18n_js():
     """손님 화면 다국어 사전 (JS)."""
-    js = "window.LANGS=%s;window.I18N=%s;" % (
+    js = "window.LANGS=%s;window.I18N=%s;window.PAYMENTS=%s;window.DEFAULT_METHODS=%s;" % (
         json.dumps(LANGS, ensure_ascii=False),
         json.dumps(I18N, ensure_ascii=False),
+        json.dumps(PAYMENT_BY_LANG, ensure_ascii=False),
+        json.dumps(DEFAULT_METHODS, ensure_ascii=False),
     )
     return Response(content=js, media_type="application/javascript; charset=utf-8")
 
@@ -1222,9 +1255,9 @@ async def pay_order(order_id: str, payload: dict):
         raise HTTPException(status_code=400, detail="취소된 주문입니다.")
 
     payer_name = (payload.get("payer_name") or "익명").strip()[:20]
-    method = payload.get("method") or "card"
-    if method not in {"card", "bank", "point"}:
-        method = "card"
+    method = payload.get("method") or "cash"
+    if method not in PAYMENT_METHODS:
+        method = "cash"
 
     # 결제 처리 지연 시뮬레이션 (실제 PG처럼 잠깐 텀)
     await asyncio.sleep(0.6)
@@ -1263,9 +1296,9 @@ async def create_preorder(payload: dict):
         raise HTTPException(status_code=400, detail="주문 항목이 비어 있습니다.")
 
     payer_name = (payload.get("payer_name") or "손님").strip()[:20]
-    method = payload.get("method") or "card"
-    if method not in {"card", "bank", "point"}:
-        method = "card"
+    method = payload.get("method") or "cash"
+    if method not in PAYMENT_METHODS:
+        method = "cash"
 
     # 결제 처리 지연 시뮬레이션
     await asyncio.sleep(0.6)

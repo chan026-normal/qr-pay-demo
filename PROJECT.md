@@ -72,6 +72,7 @@ requirements.txt  render.yaml  runtime.txt  README.md
 - 스탬프 적립(주문+1, 1만원당+1, 10개=무료음료), 메뉴배지(🔥인기 자동/수동, ✨신메뉴, 👍추천 — 관리자 설정)
 - SNS 공유(자기표현 "자랑하기 🥥✨"), 카카오 채널 버튼
 - DB 영구저장(주문·배지·스탬프), 결제내역 초기화(맨아래 위험구역)
+- 결제수단 언어 연동 현지화: 🇻🇳베트남어→MoMo/ZaloPay/현금(현지 Gen Z), 🌏외국어→카드(Visa·Master)/현금/간편결제(관광객). 언어 전환 시 자동 전환. main.py `PAYMENT_METHODS`·`PAYMENT_BY_LANG`에서 한 곳 관리
 
 ## 메뉴 (main.py MENU)
 - 코코넛 스무디 4,500 / 코코넛 워터 2,500 / 코코넛 칩 3,000 (원)
@@ -82,7 +83,8 @@ requirements.txt  render.yaml  runtime.txt  README.md
 1. **카카오톡 채널 → Zalo/Instagram 으로 교체** (베트남·관광객은 카톡 안 씀)
    - `KAKAO_CHANNEL_URL` env만 Zalo OA 링크로 바꾸거나, 버튼 라벨/링크 현지화
 2. **베트남 모드: 가격 VND 네이티브** (지금은 KRW→환산. 실배포 시 동 단위 메뉴)
-3. **결제수단 라벨 현지화** (카드/계좌이체 → MoMo/ZaloPay/현금) — 베트남 심사용
+3. ✅ **(완료 2026-06)** 결제수단 언어 연동 현지화 — vi→MoMo/ZaloPay/현금, 외국어→카드/현금/간편결제.
+   ⚠️ 외국인 관광객은 MoMo/ZaloPay를 현지 은행계좌 없이 충전·사용 불가 → 관광객 언어(ko/en/zh/ja)엔 실제 쓰는 카드·현금·간편결제 노출. 1·2번(Zalo 채널·VND)도 "현지인 vs 관광객" 같은 원리로 접근
 4. 언어 추가(태국·러시아 등) 또는 LLM 자동번역
 5. 실제 결제 연동(토스페이먼츠/MoMo/VNPay) — 사업자등록 필요
 6. 전화번호 기반 개인 스탬프(지금은 전체 공용)

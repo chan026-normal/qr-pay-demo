@@ -250,7 +250,7 @@ chargeBtn.addEventListener('click', async () => {
         const o = msg.order;
         document.getElementById('paidAmount').textContent = fmt(o.amount);
         document.getElementById('paidPayer').textContent = o.payer_name || '손님';
-        document.getElementById('paidMethod').textContent = ({card:'카드', bank:'계좌이체', point:'포인트'}[o.method] || '카드');
+        document.getElementById('paidMethod').textContent = ({momo:'MoMo', zalopay:'ZaloPay', cash:'현금', card:'카드', mobilepay:'간편결제', bank:'계좌이체', point:'포인트'}[o.method] || '-');
         document.getElementById('paidAt').textContent = (o.paid_at || '').replace('T',' ');
         showState('paid');
         setBadge('결제 완료', 'bg-emerald-100 text-emerald-700');

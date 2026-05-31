@@ -203,7 +203,7 @@
           <td class="px-4 py-3 text-stone-500">{{ (o.paid_at or '').replace('T',' ') }}</td>
           <td class="px-4 py-3 font-mono text-stone-700">{{ o.order_id }}</td>
           <td class="px-4 py-3 text-stone-700">{{ o.memo or '-' }}</td>
-          <td class="px-4 py-3 text-stone-700">{% if o.method == 'card' %}카드{% elif o.method == 'bank' %}계좌이체{% elif o.method == 'point' %}포인트{% else %}-{% endif %}</td>
+          <td class="px-4 py-3 text-stone-700">{% if o.method == 'momo' %}MoMo{% elif o.method == 'zalopay' %}ZaloPay{% elif o.method == 'cash' %}현금{% elif o.method == 'card' %}카드{% elif o.method == 'mobilepay' %}간편결제{% elif o.method == 'bank' %}계좌이체{% elif o.method == 'point' %}포인트{% else %}-{% endif %}</td>
           <td class="px-4 py-3 text-stone-700">{{ o.payer_name or '익명' }}</td>
           <td class="px-4 py-3 text-right font-bold text-stone-900">{{ "{:,}".format(o.amount) }}원</td>
         </tr>

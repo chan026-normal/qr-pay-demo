@@ -97,11 +97,9 @@
   <!-- 결제 영역 -->
   <div class="mt-6 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/15">
     <div class="text-sm font-semibold mb-2" data-i18n="pay_method">결제 수단</div>
-    <div id="methods" class="grid grid-cols-3 gap-2 mb-4">
-      <button data-method="card" class="method active py-3 rounded-xl bg-white text-amber-900 font-bold text-sm" data-i18n="m_card">카드</button>
-      <button data-method="bank" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm" data-i18n="m_bank">계좌이체</button>
-      <button data-method="point" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm" data-i18n="m_point">포인트</button>
-    </div>
+    <!-- 결제수단: 언어별로 applyLang()→renderMethods()에서 동적 생성
+         (vi=MoMo/ZaloPay/현금, 외국어=카드/현금/간편결제) -->
+    <div id="methods" class="grid grid-cols-3 gap-2 mb-4"></div>
     <label class="text-sm opacity-80" data-i18n="name_label">이름 (선택)</label>
     <input id="payerName" maxlength="20" data-i18n-ph="name_ph"
            class="mt-1 w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 outline-none placeholder-white/40 focus:border-white/60 text-sm" />
@@ -141,7 +139,7 @@ function badgeText(item){
   return '';
 }
 let cart = {};
-let selectedMethod = 'card';
+let selectedMethod = null;   // renderMethods()에서 언어별 첫 수단으로 설정
 let currentUpsell = null;
 
 // ── 언어 ──
@@ -177,6 +175,7 @@ function applyLang(lang){
     el.classList.toggle('hidden', !txt);
   });
   const sel = document.getElementById('langSel'); if (sel) sel.value = lang;
+  renderMethods(lang);   // 언어 바뀌면 결제수단도 타깃에 맞게 다시 그림
   refresh();
 }
 
@@ -206,15 +205,31 @@ document.querySelectorAll('.qty-btn').forEach(b => b.addEventListener('click', (
   refresh();
 }));
 
-document.querySelectorAll('.method').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('.method').forEach(x => {
-    x.classList.remove('active','bg-white','text-amber-900');
-    x.classList.add('bg-white/10','border','border-white/20');
+// 언어별 결제수단 버튼 렌더 (현지인=MoMo/ZaloPay/현금, 관광객=카드/현금/간편결제)
+function renderMethods(lang){
+  const keys = (window.PAYMENTS && window.PAYMENTS[lang]) || window.DEFAULT_METHODS || ['cash'];
+  selectedMethod = keys[0];
+  document.getElementById('methods').innerHTML = keys.map((k, i) => {
+    const on = i === 0
+      ? 'active bg-white text-amber-900 font-bold'
+      : 'bg-white/10 border border-white/20 font-semibold';
+    return `<button data-method="${k}" class="method py-3 rounded-xl ${on} text-sm">${t('m_'+k)}</button>`;
+  }).join('');
+}
+function selectMethod(btn){
+  document.querySelectorAll('#methods .method').forEach(x => {
+    x.classList.remove('active','bg-white','text-amber-900','font-bold');
+    x.classList.add('bg-white/10','border','border-white/20','font-semibold');
   });
-  b.classList.add('active','bg-white','text-amber-900');
-  b.classList.remove('bg-white/10','border','border-white/20');
-  selectedMethod = b.dataset.method;
-}));
+  btn.classList.add('active','bg-white','text-amber-900','font-bold');
+  btn.classList.remove('bg-white/10','border','border-white/20','font-semibold');
+  selectedMethod = btn.dataset.method;
+}
+// 이벤트 위임 — 동적 생성된 버튼에도 클릭이 동작
+document.getElementById('methods').addEventListener('click', e => {
+  const btn = e.target.closest('.method');
+  if (btn) selectMethod(btn);
+});
 
 document.getElementById('payBtn').addEventListener('click', async () => {
   if (count() === 0) return;
