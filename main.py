@@ -85,7 +85,7 @@ I18N = {
         "reset_order": "🔄 주문 초기화", "nl_reset_done": "주문을 초기화했어요",
         "badge_hot": "🔥 인기", "badge_new": "✨ 신메뉴", "badge_reco": "👍 추천",
         "stamp_title": "스탬프 적립", "stamp_free": "🎁 무료 음료 쿠폰 획득!",
-        "stamp_progress": "%s잔 더 모으면 무료 음료 🎁",
+        "stamp_progress": "%s잔 더 모으면 무료 음료 🎁", "stamp_earned": "이번 적립 +%s개",
         "share_btn": "📲 공유하기", "share_text": "coconut.kim에서 코코넛 음료 즐겼어요 🥥",
         "share_copied": "공유 링크를 복사했어요!", "kakao_btn": "💬 카카오톡 채널",
     },
@@ -117,7 +117,7 @@ I18N = {
         "reset_order": "🔄 Reset order", "nl_reset_done": "Order cleared",
         "badge_hot": "🔥 Popular", "badge_new": "✨ New", "badge_reco": "👍 Pick",
         "stamp_title": "Stamps", "stamp_free": "🎁 Free drink coupon earned!",
-        "stamp_progress": "%s more for a free drink 🎁",
+        "stamp_progress": "%s more for a free drink 🎁", "stamp_earned": "+%s earned",
         "share_btn": "📲 Share", "share_text": "Enjoying coconut drinks at coconut.kim 🥥",
         "share_copied": "Link copied!", "kakao_btn": "💬 KakaoTalk Channel",
     },
@@ -149,7 +149,7 @@ I18N = {
         "reset_order": "🔄 Đặt lại đơn", "nl_reset_done": "Đã xóa đơn hàng",
         "badge_hot": "🔥 Phổ biến", "badge_new": "✨ Mới", "badge_reco": "👍 Đề xuất",
         "stamp_title": "Tem tích lũy", "stamp_free": "🎁 Nhận phiếu đồ uống miễn phí!",
-        "stamp_progress": "Thêm %s ly để được tặng đồ uống 🎁",
+        "stamp_progress": "Thêm %s ly để được tặng đồ uống 🎁", "stamp_earned": "+%s tem",
         "share_btn": "📲 Chia sẻ", "share_text": "Thưởng thức đồ uống dừa tại coconut.kim 🥥",
         "share_copied": "Đã sao chép liên kết!", "kakao_btn": "💬 Kênh KakaoTalk",
     },
@@ -181,7 +181,7 @@ I18N = {
         "reset_order": "🔄 重新下单", "nl_reset_done": "已清空订单",
         "badge_hot": "🔥 热门", "badge_new": "✨ 新品", "badge_reco": "👍 推荐",
         "stamp_title": "集点", "stamp_free": "🎁 获得免费饮品券！",
-        "stamp_progress": "再集 %s 杯即可免费 🎁",
+        "stamp_progress": "再集 %s 杯即可免费 🎁", "stamp_earned": "本次 +%s",
         "share_btn": "📲 分享", "share_text": "在 coconut.kim 享用椰子饮品 🥥",
         "share_copied": "已复制链接！", "kakao_btn": "💬 KakaoTalk 频道",
     },
@@ -213,7 +213,7 @@ I18N = {
         "reset_order": "🔄 注文リセット", "nl_reset_done": "注文をリセットしました",
         "badge_hot": "🔥 人気", "badge_new": "✨ 新商品", "badge_reco": "👍 おすすめ",
         "stamp_title": "スタンプ", "stamp_free": "🎁 無料ドリンク券を獲得！",
-        "stamp_progress": "あと %s 杯で無料ドリンク 🎁",
+        "stamp_progress": "あと %s 杯で無料ドリンク 🎁", "stamp_earned": "今回 +%s",
         "share_btn": "📲 シェア", "share_text": "coconut.kim でココナッツドリンク 🥥",
         "share_copied": "リンクをコピーしました！", "kakao_btn": "💬 カカオチャンネル",
     },
@@ -395,9 +395,17 @@ SUBSCRIBERS: Dict[str, List[WebSocket]] = {}
 KITCHEN_SUBSCRIBERS: List[WebSocket] = []
 PICKUP_COUNTER = {"n": 0}
 
-# 스탬프 적립 (시연용: 결제할 때마다 전체 +1, 10개=무료 음료)
+# 스탬프 적립 (시연용): 주문 1건당 +1, 추가로 결제금액 1만원당 +1, 10개=무료 음료
 STAMP_GOAL = 10
+STAMP_PER_AMOUNT = 10000
 STAMPS = {"count": 0}
+
+
+def earn_stamps(amount: int) -> int:
+    """이번 결제로 적립되는 스탬프 수 = 1(주문) + 금액//1만원."""
+    earned = 1 + (max(0, amount) // STAMP_PER_AMOUNT)
+    STAMPS["count"] += earned
+    return earned
 
 
 def stamp_state() -> dict:
@@ -1008,6 +1016,7 @@ async def track_page(request: Request, order_id: str):
             "menu": MENU,
             "langs": LANGS,
             "stamps": stamp_state(),
+            "earned": 1 + (order.amount // STAMP_PER_AMOUNT),
             "kakao_url": KAKAO_CHANNEL_URL,
         },
     )
@@ -1096,10 +1105,10 @@ async def pay_order(order_id: str, payload: dict):
     order.payer_name = payer_name
     order.method = method
     HISTORY.append(order)
-    STAMPS["count"] += 1
+    earned = earn_stamps(order.amount)
 
     await broadcast(order_id, {"type": "paid", "order": order.__dict__})
-    return {"ok": True, "order": order.__dict__, "stamps": stamp_state()}
+    return {"ok": True, "order": order.__dict__, "stamps": stamp_state(), "earned": earned}
 
 
 @app.post("/api/preorder")
@@ -1148,7 +1157,7 @@ async def create_preorder(payload: dict):
     )
     ORDERS[order_id] = order
     HISTORY.append(order)
-    STAMPS["count"] += 1
+    earn_stamps(amount)
 
     base = (payload.get("base") or "").rstrip("/")
     track_url = f"{base}/track/{order_id}" if base else f"/track/{order_id}"

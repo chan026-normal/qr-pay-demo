@@ -119,9 +119,10 @@ payBtn.addEventListener('click', async () => {
     document.getElementById('doneView').classList.add('flex');
     if (data.stamps){
       const s = data.stamps;
+      const earnedTxt = data.earned ? `이번 +${data.earned}개 · ` : '';
       document.getElementById('payStamp').textContent = s.free
         ? '🎁 무료 음료 쿠폰 획득!'
-        : `스탬프 ${s.filled}/${s.goal} · ${s.goal - s.filled}잔 더 모으면 무료 음료 🎁`;
+        : `${earnedTxt}스탬프 ${s.filled}/${s.goal}`;
     }
   } catch (e) {
     alert(e.message);

@@ -31,9 +31,9 @@
 </style>
 </head>
 <body class="min-h-screen text-white">
-<div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
+<div class="max-w-md mx-auto min-h-screen flex flex-col px-5 py-3">
 
-  <header class="flex items-center justify-between py-3 text-sm opacity-90">
+  <header class="flex items-center justify-between py-1 text-sm opacity-90">
     <div class="flex items-center gap-2">
       <div class="w-7 h-7 rounded-lg bg-white/20 grid place-items-center font-black">K</div>
       <span>킴페이 · {{ store_name }}</span>
@@ -42,20 +42,20 @@
   </header>
 
   <!-- 픽업 번호 -->
-  <div class="mt-6 text-center fade-in">
-    <div class="text-sm uppercase tracking-widest opacity-70" data-i18n="pickup_number">픽업 번호</div>
-    <div class="text-7xl font-black mt-1 pulse">#{{ order.pickup_number }}</div>
-    <div class="text-sm opacity-80 mt-1"><span data-i18n="paid_done">결제 완료</span> · <span id="paidAmt"></span></div>
+  <div class="mt-2 text-center fade-in">
+    <div class="text-xs uppercase tracking-widest opacity-70" data-i18n="pickup_number">픽업 번호</div>
+    <div class="text-5xl font-black pulse">#{{ order.pickup_number }}</div>
+    <div class="text-sm opacity-80"><span data-i18n="paid_done">결제 완료</span> · <span id="paidAmt"></span></div>
   </div>
 
   <!-- 상태 배너 -->
-  <div class="mt-6 bg-white/12 backdrop-blur rounded-2xl p-5 text-center border border-white/15">
-    <div id="statusBig" class="text-2xl font-black">···</div>
+  <div class="mt-3 bg-white/12 backdrop-blur rounded-2xl p-4 text-center border border-white/15">
+    <div id="statusBig" class="text-xl font-black">···</div>
     <div id="statusSub" class="text-sm opacity-80 mt-1"></div>
   </div>
 
   <!-- 진행 단계 -->
-  <div class="mt-6 grid grid-cols-4 gap-2 text-center text-xs">
+  <div class="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
     <div class="step" data-step="received">
       <div class="dot w-9 h-9 mx-auto rounded-full grid place-items-center font-bold bg-white/15">1</div>
       <div class="mt-1 opacity-80" data-i18n="step1">접수</div>
@@ -75,21 +75,21 @@
   </div>
 
   <!-- 주문 내역 -->
-  <div class="mt-6 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/15">
-    <div class="text-sm font-semibold mb-2 opacity-90" data-i18n="order_items">주문 내역</div>
-    <div id="itemList" class="space-y-1 text-sm"></div>
-    <div class="border-t border-white/15 mt-3 pt-3 flex justify-between font-bold">
+  <div class="mt-3 bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15">
+    <div class="text-xs font-semibold mb-1 opacity-90" data-i18n="order_items">주문 내역</div>
+    <div id="itemList" class="space-y-0.5 text-sm"></div>
+    <div class="border-t border-white/15 mt-2 pt-2 flex justify-between font-bold">
       <span data-i18n="total">합계</span><span id="totalAmt"></span>
     </div>
   </div>
 
   <!-- 🎟 스탬프 적립 -->
-  <div class="mt-4 bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15">
+  <div class="mt-3 bg-white/10 backdrop-blur rounded-2xl p-3 border border-white/15">
     <div class="flex items-center justify-between mb-2">
-      <span class="text-sm font-semibold opacity-90" data-i18n="stamp_title">스탬프 적립</span>
+      <span class="text-sm font-semibold opacity-90"><span data-i18n="stamp_title">스탬프 적립</span> <span id="stampEarned" class="text-xs opacity-80 font-normal"></span></span>
       <span class="text-sm font-bold">{{ stamps.filled }}/{{ stamps.goal }}</span>
     </div>
-    <div class="flex gap-1.5 flex-wrap">
+    <div class="flex gap-1 flex-wrap">
       {% for i in range(stamps.goal) %}
       <span class="w-6 h-6 rounded-full grid place-items-center text-xs {% if i < stamps.filled %}bg-amber-400{% else %}bg-white/15{% endif %}">{% if i < stamps.filled %}🥥{% endif %}</span>
       {% endfor %}
@@ -98,12 +98,14 @@
   </div>
 
   <!-- 📲 SNS 공유 + 💬 카카오톡 채널 -->
-  <button id="shareBtn" class="mt-3 w-full py-3 rounded-2xl bg-white/15 border border-white/20 font-semibold hover:bg-white/25 active:scale-[.99] transition" data-i18n="share_btn">📲 공유하기</button>
-  <a href="{{ kakao_url }}" target="_blank" rel="noopener"
-     class="mt-2 block w-full py-3 rounded-2xl text-center font-bold active:scale-[.99] transition"
-     style="background:#FEE500;color:#3C1E1E;" data-i18n="kakao_btn">💬 카카오톡 채널</a>
+  <div class="mt-3 grid grid-cols-2 gap-2">
+    <button id="shareBtn" class="py-3 rounded-2xl bg-white/15 border border-white/20 font-semibold hover:bg-white/25 active:scale-[.99] transition text-sm" data-i18n="share_btn">📲 공유하기</button>
+    <a href="{{ kakao_url }}" target="_blank" rel="noopener"
+       class="py-3 rounded-2xl text-center font-bold active:scale-[.99] transition text-sm"
+       style="background:#FEE500;color:#3C1E1E;" data-i18n="kakao_btn">💬 카카오톡 채널</a>
+  </div>
 
-  <div class="mt-auto pt-6 text-center text-xs opacity-60"><span data-i18n="order_no">주문번호</span> <span class="font-mono">{{ order.order_id }}</span></div>
+  <div class="mt-3 text-center text-xs opacity-60"><span data-i18n="order_no">주문번호</span> <span class="font-mono">{{ order.order_id }}</span></div>
 </div>
 
 <script>
@@ -112,6 +114,7 @@ const ITEMS = {{ order.items|tojson }};
 const AMOUNT = {{ order.amount }};
 const MENU = {{ menu|tojson }};
 const STAMPS = {{ stamps|tojson }};
+const EARNED = {{ earned }};
 const menuById = Object.fromEntries(MENU.map(m => [m.id, m]));
 const FLOW = ["received","preparing","ready","picked_up"];
 
@@ -172,6 +175,8 @@ function applyLang(lang){
   const sm = document.getElementById('stampMsg');
   if (sm) sm.textContent = STAMPS.free ? t('stamp_free')
         : t('stamp_progress').replace('%s', STAMPS.goal - STAMPS.filled);
+  const se = document.getElementById('stampEarned');
+  if (se) se.textContent = t('stamp_earned').replace('%s', EARNED);
   const sel = document.getElementById('langSel'); if (sel) sel.value = lang;
 }
 
