@@ -86,7 +86,7 @@ I18N = {
         "badge_hot": "🔥 인기", "badge_new": "✨ 신메뉴", "badge_reco": "👍 추천",
         "stamp_title": "스탬프 적립", "stamp_free": "🎁 무료 음료 쿠폰 획득!",
         "stamp_progress": "%s잔 더 모으면 무료 음료 🎁", "stamp_earned": "이번 적립 +%s개",
-        "share_btn": "📲 공유하기", "share_text": "coconut.kim에서 코코넛 음료 즐겼어요 🥥",
+        "share_btn": "📲 공유하기", "share_text": "coconut.kim 🥥 QR로 주문하면 줄 안 서고 바로 픽업! 스탬프 모으면 무료 음료 🎁 지금 주문 👉",
         "share_copied": "공유 링크를 복사했어요!", "kakao_btn": "💬 카카오톡 채널",
     },
     "en": {
@@ -118,7 +118,7 @@ I18N = {
         "badge_hot": "🔥 Popular", "badge_new": "✨ New", "badge_reco": "👍 Pick",
         "stamp_title": "Stamps", "stamp_free": "🎁 Free drink coupon earned!",
         "stamp_progress": "%s more for a free drink 🎁", "stamp_earned": "+%s earned",
-        "share_btn": "📲 Share", "share_text": "Enjoying coconut drinks at coconut.kim 🥥",
+        "share_btn": "📲 Share", "share_text": "coconut.kim 🥥 Order by QR, skip the line, pick up fast! Collect stamps for a free drink 🎁 Order now 👉",
         "share_copied": "Link copied!", "kakao_btn": "💬 KakaoTalk Channel",
     },
     "vi": {
@@ -150,7 +150,7 @@ I18N = {
         "badge_hot": "🔥 Phổ biến", "badge_new": "✨ Mới", "badge_reco": "👍 Đề xuất",
         "stamp_title": "Tem tích lũy", "stamp_free": "🎁 Nhận phiếu đồ uống miễn phí!",
         "stamp_progress": "Thêm %s ly để được tặng đồ uống 🎁", "stamp_earned": "+%s tem",
-        "share_btn": "📲 Chia sẻ", "share_text": "Thưởng thức đồ uống dừa tại coconut.kim 🥥",
+        "share_btn": "📲 Chia sẻ", "share_text": "coconut.kim 🥥 Đặt bằng QR, khỏi xếp hàng, lấy nhanh! Tích tem đổi đồ uống miễn phí 🎁 Đặt ngay 👉",
         "share_copied": "Đã sao chép liên kết!", "kakao_btn": "💬 Kênh KakaoTalk",
     },
     "zh": {
@@ -182,7 +182,7 @@ I18N = {
         "badge_hot": "🔥 热门", "badge_new": "✨ 新品", "badge_reco": "👍 推荐",
         "stamp_title": "集点", "stamp_free": "🎁 获得免费饮品券！",
         "stamp_progress": "再集 %s 杯即可免费 🎁", "stamp_earned": "本次 +%s",
-        "share_btn": "📲 分享", "share_text": "在 coconut.kim 享用椰子饮品 🥥",
+        "share_btn": "📲 分享", "share_text": "coconut.kim 🥥 扫码点单，免排队，快速取餐！集点换免费饮品 🎁 立即点单 👉",
         "share_copied": "已复制链接！", "kakao_btn": "💬 KakaoTalk 频道",
     },
     "ja": {
@@ -214,7 +214,7 @@ I18N = {
         "badge_hot": "🔥 人気", "badge_new": "✨ 新商品", "badge_reco": "👍 おすすめ",
         "stamp_title": "スタンプ", "stamp_free": "🎁 無料ドリンク券を獲得！",
         "stamp_progress": "あと %s 杯で無料ドリンク 🎁", "stamp_earned": "今回 +%s",
-        "share_btn": "📲 シェア", "share_text": "coconut.kim でココナッツドリンク 🥥",
+        "share_btn": "📲 シェア", "share_text": "coconut.kim 🥥 QRで注文、並ばず受取！スタンプで無料ドリンク 🎁 今すぐ注文 👉",
         "share_copied": "リンクをコピーしました！", "kakao_btn": "💬 カカオチャンネル",
     },
 }
