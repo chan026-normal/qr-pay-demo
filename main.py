@@ -621,19 +621,38 @@ async def api_insights():
         base["ai"] = False
         return base
 
+    item_stats = _item_stats()  # 수량 내림차순 정렬
+    method_stats = _method_stats()
+    hourly = _hourly_stats()
+    peak = max(hourly, key=lambda h: h["revenue"]) if hourly else None
+
+    # 순위 계산은 Python이 미리 확정 → LLM이 최대/최소를 틀리지 않게 못박음
+    facts = {
+        "top_seller": item_stats[0]["name"] if item_stats else None,
+        "top_seller_qty": item_stats[0]["qty"] if item_stats else 0,
+        "lowest_seller": item_stats[-1]["name"] if item_stats else None,
+        "lowest_seller_qty": item_stats[-1]["qty"] if item_stats else 0,
+        "peak_hour": peak["hour"] if peak else None,
+        "dominant_method": method_stats[0]["label"] if method_stats else None,
+    }
     context = {
-        "item_stats": _item_stats(),
+        "FACTS_GROUND_TRUTH": facts,
+        "item_stats_sorted_by_qty_desc": item_stats,
         "method_stats": [
             {"label": m["label"], "count": m["count"], "revenue": m["revenue"], "pct": m["pct"]}
-            for m in _method_stats()
+            for m in method_stats
         ],
-        "hourly_stats": _hourly_stats(),
+        "hourly_stats": hourly,
         "total_orders": len(HISTORY),
         "total_revenue": sum(o.amount for o in HISTORY),
     }
     system = (
         "You are a retail operations analyst for a coconut drink shop named coconut.kim. "
         "Given the sales data, produce concise, specific, actionable insights in Korean. "
+        "CRITICAL: 'FACTS_GROUND_TRUTH' is pre-computed and authoritative. NEVER contradict it. "
+        "The least-sold item is exactly facts.lowest_seller; the best-seller is facts.top_seller. "
+        "Do not recompute or guess rankings — use the given facts. "
+        "'item_stats_sorted_by_qty_desc' is sorted by quantity (first=best, last=worst). "
         "Respond ONLY as JSON with these array-of-string keys: "
         "insights (current status), forecast (demand/staffing/inventory advice), "
         "combos (cross-sell/set-menu ideas), recommendations (action items). "
