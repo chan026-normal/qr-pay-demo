@@ -224,9 +224,10 @@ chargeBtn.addEventListener('click', async () => {
   if (amount <= 0) return;
   chargeBtn.disabled = true;
   try {
+    const orderItems = Object.entries(cart).filter(([_, q]) => q > 0).map(([id, qty]) => ({ id, qty }));
     const res = await fetch('/api/order', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ amount, memo: cartMemo(), base: location.origin })
+      body: JSON.stringify({ amount, memo: cartMemo(), items: orderItems, base: location.origin })
     });
     const data = await res.json();
     currentOrderId = data.order_id;

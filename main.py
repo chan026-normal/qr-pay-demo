@@ -1,4 +1,5 @@
 import asyncio
+import csv
 import io
 import json
 import socket
@@ -356,15 +357,55 @@ async def merchant_page(request: Request):
     )
 
 
+def _item_stats():
+    """결제 완료된 주문에서 품목별 판매량·매출 집계."""
+    stats: Dict[str, dict] = {}
+    for o in HISTORY:
+        for it in o.items:
+            s = stats.setdefault(it["id"], {"name": it["name"], "qty": 0, "revenue": 0})
+            s["qty"] += it["qty"]
+            s["revenue"] += it["qty"] * it["price"]
+    return sorted(stats.values(), key=lambda x: -x["qty"])
+
+
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
+    stats = _item_stats()
+    max_qty = max((s["qty"] for s in stats), default=0)
     return templates.TemplateResponse(
         "admin.html",
         {
             "request": request,
             "store_name": STORE_NAME,
             "orders": list(reversed(HISTORY))[:50],
+            "item_stats": stats,
+            "max_qty": max_qty,
         },
+    )
+
+
+@app.get("/admin/export.csv")
+async def export_csv():
+    """전체 결제 내역을 CSV로 다운로드 (Excel 호환 UTF-8 BOM)."""
+    buf = io.StringIO()
+    buf.write("﻿")  # Excel에서 한글 깨짐 방지
+    w = csv.writer(buf)
+    w.writerow(["결제시각", "주문번호", "유형", "픽업번호", "품목", "결제수단", "손님", "금액(원)"])
+    method_kr = {"card": "카드", "bank": "계좌이체", "point": "포인트"}
+    for o in HISTORY:
+        typ = "선주문" if o.order_type == "preorder" else "POS"
+        items_str = ", ".join(f"{it['name']} x{it['qty']}" for it in o.items) or o.memo
+        w.writerow([
+            (o.paid_at or "").replace("T", " "),
+            o.order_id, typ, o.pickup_number or "",
+            items_str, method_kr.get(o.method, o.method or ""),
+            o.payer_name or "", o.amount,
+        ])
+    filename = f"coconut_orders_{datetime.now():%Y%m%d_%H%M}.csv"
+    return Response(
+        content=buf.getvalue().encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -523,8 +564,19 @@ async def create_order(payload: dict):
         raise HTTPException(status_code=400, detail="금액은 0보다 커야 합니다.")
     memo = (payload.get("memo") or "").strip()[:40]
 
+    # POS 주문도 품목 데이터 저장 (분석/CSV용)
+    menu_by_id = {m["id"]: m for m in MENU}
+    items = []
+    for it in (payload.get("items") or []):
+        m = menu_by_id.get(it.get("id"))
+        if not m:
+            continue
+        qty = max(0, min(int(it.get("qty", 0)), 99))
+        if qty:
+            items.append({"id": m["id"], "name": m["name"], "qty": qty, "price": m["price"]})
+
     order_id = uuid.uuid4().hex[:10].upper()
-    order = Order(order_id=order_id, amount=amount, memo=memo)
+    order = Order(order_id=order_id, amount=amount, memo=memo, items=items)
     ORDERS[order_id] = order
 
     request: Request = payload.get("__request__")  # not used; client supplies base
