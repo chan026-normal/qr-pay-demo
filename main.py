@@ -6,6 +6,7 @@ import os
 import re
 import socket
 import time
+import urllib.error
 import urllib.request
 import uuid
 from base64 import b64encode
@@ -645,6 +646,32 @@ async def api_insights():
         return result
     base["ai"] = False
     return base
+
+
+@app.get("/api/ai-status")
+async def ai_status():
+    """AI 연결 진단 (키 값은 노출 안 함). 문제 원인 파악용."""
+    info = {"key_present": bool(OPENAI_API_KEY), "model": OPENAI_MODEL}
+    if not OPENAI_API_KEY:
+        info["status"] = "no_key (환경변수 OPENAI_API_KEY 미설정 또는 재배포 안 됨)"
+        return info
+    info["key_prefix"] = OPENAI_API_KEY[:7] + "…"  # sk-xxx… 형태만
+    try:
+        text = await asyncio.to_thread(_openai_chat_sync, 'Reply with JSON {"ok":true}', "ping")
+        info["status"] = "ok ✅ (ChatGPT 정상 작동)"
+        info["sample"] = text[:80]
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read().decode())
+            detail = body.get("error", {}).get("message", "")[:200]
+        except Exception:
+            detail = ""
+        info["status"] = f"http_error_{e.code}"
+        info["detail"] = detail
+    except Exception as e:
+        info["status"] = "error"
+        info["detail"] = str(e)[:200]
+    return info
 
 
 @app.post("/api/nl-order")
