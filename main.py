@@ -88,7 +88,7 @@ I18N = {
         "stamp_progress": "%s잔 더 모으면 무료 음료 🎁", "stamp_earned": "이번 적립 +%s개",
         "share_btn": "📣 공유하기", "share_text": "coconut.kim 🥥 폰으로 미리 주문하고 준비되면 픽업! 스탬프 모으면 무료 음료 🎁 지금 주문 👉",
         "share_copied": "공유 링크를 복사했어요!", "kakao_btn": "💬 카카오톡 채널",
-        "share_cta": "맛있었다면 친구에게도 알려주세요 😊",
+        "share_cta": "오늘의 코코넛 한 잔, 자랑해볼까요? 📸",
     },
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
@@ -121,7 +121,7 @@ I18N = {
         "stamp_progress": "%s more for a free drink 🎁", "stamp_earned": "+%s earned",
         "share_btn": "📣 Share", "share_text": "coconut.kim 🥥 Order ahead on your phone, pick up when ready! Collect stamps for a free drink 🎁 Order now 👉",
         "share_copied": "Link copied!", "kakao_btn": "💬 KakaoTalk Channel",
-        "share_cta": "Loved it? Let your friends know 😊",
+        "share_cta": "Show off your coconut moment 📸",
     },
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
@@ -154,7 +154,7 @@ I18N = {
         "stamp_progress": "Thêm %s ly để được tặng đồ uống 🎁", "stamp_earned": "+%s tem",
         "share_btn": "📣 Chia sẻ", "share_text": "coconut.kim 🥥 Đặt trước bằng điện thoại, lấy khi sẵn sàng! Tích tem đổi đồ uống miễn phí 🎁 Đặt ngay 👉",
         "share_copied": "Đã sao chép liên kết!", "kakao_btn": "💬 Kênh KakaoTalk",
-        "share_cta": "Ngon chứ? Giới thiệu cho bạn bè nhé 😊",
+        "share_cta": "Khoe ly dừa của bạn nào 📸",
     },
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
@@ -187,7 +187,7 @@ I18N = {
         "stamp_progress": "再集 %s 杯即可免费 🎁", "stamp_earned": "本次 +%s",
         "share_btn": "📣 分享", "share_text": "coconut.kim 🥥 手机提前点单，做好就取！集点换免费饮品 🎁 立即点单 👉",
         "share_copied": "已复制链接！", "kakao_btn": "💬 KakaoTalk 频道",
-        "share_cta": "好喝的话，分享给朋友吧 😊",
+        "share_cta": "晒一晒你的椰子时刻 📸",
     },
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
@@ -220,7 +220,7 @@ I18N = {
         "stamp_progress": "あと %s 杯で無料ドリンク 🎁", "stamp_earned": "今回 +%s",
         "share_btn": "📣 シェア", "share_text": "coconut.kim 🥥 スマホで事前注文、できたら受取！スタンプで無料ドリンク 🎁 今すぐ注文 👉",
         "share_copied": "リンクをコピーしました！", "kakao_btn": "💬 カカオチャンネル",
-        "share_cta": "美味しかったら友達にも教えてね 😊",
+        "share_cta": "今日のココナッツ、自慢しちゃおう 📸",
     },
 }
 
