@@ -90,7 +90,7 @@
           card('🤝 함께 팔리는 조합', d.combos, '#059669') +
           card('💡 실행 추천', d.recommendations, '#7C3AED');
         body.classList.remove('hidden');
-        hint.classList.add('hidden');
+        hint.textContent = d.ai ? '🟢 ChatGPT 기반 분석' : '📊 통계 기반 분석 (API 키 연결 시 AI로 전환됩니다)';
       } catch (e) {
         hint.textContent = '분석 실패. 다시 시도해주세요.';
       }

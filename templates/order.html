@@ -48,6 +48,16 @@
     <div class="text-sm opacity-80 mt-0.5" data-i18n="order_title">미리 주문하고 픽업하세요</div>
   </div>
 
+  <!-- 🤖 자연어 주문 -->
+  <div class="mt-4 bg-white/10 backdrop-blur rounded-2xl p-3 border border-white/15">
+    <div class="text-sm font-semibold mb-2" data-i18n="nl_title">🤖 말로 주문하기</div>
+    <div class="flex gap-2">
+      <input id="nlInput" data-i18n-ph="nl_ph" class="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 outline-none placeholder-white/40 text-sm" />
+      <button id="nlBtn" class="px-4 py-2 rounded-xl bg-white text-amber-900 font-bold text-sm whitespace-nowrap" data-i18n="nl_btn">담기</button>
+    </div>
+    <div id="nlReply" class="text-xs opacity-80 mt-2 hidden"></div>
+  </div>
+
   <!-- 메뉴 -->
   <div class="mt-5 space-y-2">
     {% for item in menu %}
@@ -64,6 +74,16 @@
       </div>
     </div>
     {% endfor %}
+  </div>
+
+  <!-- 🤝 함께 즐기면 좋아요 (업셀) -->
+  <div id="upsell" class="mt-4 hidden">
+    <div class="text-xs opacity-70 mb-1" data-i18n="upsell_title">함께 즐기면 좋아요</div>
+    <button id="upsellChip" class="w-full text-left bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-2 hover:bg-white/15 active:scale-[.99] transition">
+      <span id="upsellEmoji" class="text-2xl"></span>
+      <span class="flex-1 min-w-0"><span id="upsellName" class="font-bold"></span> <span id="upsellPrice" class="text-sm opacity-70"></span></span>
+      <span class="text-xl font-bold text-amber-200">＋</span>
+    </button>
   </div>
 
   <!-- 결제 영역 -->
@@ -105,6 +125,7 @@ const priceById = Object.fromEntries(MENU.map(m => [m.id, m.price]));
 const menuById = Object.fromEntries(MENU.map(m => [m.id, m]));
 let cart = {};
 let selectedMethod = 'card';
+let currentUpsell = null;
 
 // ── 언어 ──
 function getLang(){
@@ -151,6 +172,7 @@ function refresh(){
   const label = document.getElementById('payLabel');
   if (count() === 0){ payBtn.disabled = true; label.textContent = t('btn_empty'); }
   else { payBtn.disabled = false; label.textContent = t('btn_order').replace('%s', priceFmt(total())); }
+  updateUpsell();
 }
 
 document.querySelectorAll('.qty-btn').forEach(b => b.addEventListener('click', () => {
@@ -191,6 +213,57 @@ document.getElementById('payBtn').addEventListener('click', async () => {
     document.getElementById('payLabel').textContent = t('btn_retry');
     document.getElementById('paySpin').classList.add('hidden');
   }
+});
+
+// ── 🤖 자연어 주문 ──
+document.getElementById('nlBtn').addEventListener('click', async () => {
+  const input = document.getElementById('nlInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('nlBtn');
+  const reply = document.getElementById('nlReply');
+  btn.textContent = t('nl_thinking'); btn.disabled = true;
+  try {
+    const d = await (await fetch('/api/nl-order', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, lang: LANG })
+    })).json();
+    if (d.items && d.items.length){
+      d.items.forEach(it => { cart[it.id] = (cart[it.id]||0) + it.qty; });
+      refresh();
+      input.value = '';
+      if (d.reply){ reply.textContent = d.reply; reply.classList.remove('hidden'); }
+      else { reply.classList.add('hidden'); }
+    } else {
+      reply.textContent = t('nl_none'); reply.classList.remove('hidden');
+    }
+  } catch(e){
+    reply.textContent = t('nl_none'); reply.classList.remove('hidden');
+  }
+  btn.textContent = t('nl_btn'); btn.disabled = false;
+});
+document.getElementById('nlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('nlBtn').click();
+});
+
+// ── 🤝 업셀 추천 ──
+async function updateUpsell(){
+  const up = document.getElementById('upsell');
+  const ids = Object.keys(cart).filter(id => cart[id] > 0);
+  if (ids.length === 0){ up.classList.add('hidden'); return; }
+  try {
+    const d = await (await fetch('/api/recommend?items=' + encodeURIComponent(ids.join(',')))).json();
+    if (d.recommend && !cart[d.recommend.id]){
+      currentUpsell = d.recommend;
+      document.getElementById('upsellEmoji').textContent = d.recommend.emoji || '🥥';
+      document.getElementById('upsellName').textContent = (d.recommend.i18n && d.recommend.i18n[LANG]) || d.recommend.name;
+      document.getElementById('upsellPrice').textContent = priceFmt(d.recommend.price);
+      up.classList.remove('hidden');
+    } else { up.classList.add('hidden'); }
+  } catch(e){ up.classList.add('hidden'); }
+}
+document.getElementById('upsellChip').addEventListener('click', () => {
+  if (currentUpsell){ cart[currentUpsell.id] = (cart[currentUpsell.id]||0) + 1; refresh(); }
 });
 
 applyLang(LANG);

@@ -2,6 +2,8 @@ import asyncio
 import csv
 import io
 import json
+import os
+import re
 import socket
 import time
 import urllib.request
@@ -65,6 +67,8 @@ I18N = {
         "android_guide": "브라우저 메뉴 (⋮) 에서 \"홈 화면에 추가\" 또는 \"앱 설치\" 를 선택하세요.",
         "inapp_guide": "카카오톡·인스타 등 앱 내부 브라우저에서는 설치가 안 돼요.\n\n우측 상단 메뉴 (⋮ 또는 ···) → \"다른 브라우저로 열기\" → Chrome 으로 연 뒤 다시 시도해주세요.",
         "samsung_guide": "삼성 인터넷에서는 설치 시 안드로이드 보안 차단(\"안전하지 않은 앱\")이 뜰 수 있어요.\n\n• Chrome 으로 열면 정상 설치됩니다.\n• 또는 설치 없이 이 화면에서 바로 주문하셔도 됩니다.",
+        "nl_title": "🤖 말로 주문하기", "nl_ph": "예: 시원한 코코넛 음료 2개", "nl_btn": "담기",
+        "nl_thinking": "분석 중…", "nl_none": "맞는 메뉴를 찾지 못했어요", "upsell_title": "함께 즐기면 좋아요",
     },
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
@@ -88,6 +92,8 @@ I18N = {
         "android_guide": "Open the browser menu (⋮) and choose \"Install app\" or \"Add to Home screen\".",
         "inapp_guide": "Install isn't supported in in-app browsers (KakaoTalk, Instagram, etc.).\n\nTap the menu (⋮ or ···) → \"Open in browser\" → Chrome, then try again.",
         "samsung_guide": "On Samsung Internet, Android may block the install (\"unsafe app\").\n\n• Open in Chrome to install properly.\n• Or just order here without installing.",
+        "nl_title": "🤖 Order by text", "nl_ph": "e.g. 2 cold coconut drinks", "nl_btn": "Add",
+        "nl_thinking": "Thinking…", "nl_none": "No matching items found", "upsell_title": "Goes well with",
     },
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
@@ -111,6 +117,8 @@ I18N = {
         "android_guide": "Mở menu trình duyệt (⋮) và chọn \"Cài ứng dụng\" hoặc \"Thêm vào MH chính\".",
         "inapp_guide": "Không thể cài trong trình duyệt trong ứng dụng (KakaoTalk, Instagram...).\n\nNhấn menu (⋮ hoặc ···) → \"Mở bằng trình duyệt\" → Chrome, rồi thử lại.",
         "samsung_guide": "Trên Samsung Internet, Android có thể chặn cài đặt (\"ứng dụng không an toàn\").\n\n• Mở bằng Chrome để cài đúng cách.\n• Hoặc đặt món ngay tại đây mà không cần cài.",
+        "nl_title": "🤖 Đặt bằng lời", "nl_ph": "vd: 2 ly nước dừa mát", "nl_btn": "Thêm",
+        "nl_thinking": "Đang xử lý…", "nl_none": "Không tìm thấy món phù hợp", "upsell_title": "Dùng kèm ngon hơn",
     },
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
@@ -134,6 +142,8 @@ I18N = {
         "android_guide": "打开浏览器菜单 (⋮)，选择\"安装应用\"或\"添加到主屏幕\"。",
         "inapp_guide": "应用内置浏览器（KakaoTalk、Instagram 等）无法安装。\n\n点击右上角菜单 (⋮ 或 ···) →\"用浏览器打开\"→ Chrome，然后重试。",
         "samsung_guide": "在三星浏览器中，安装可能被 Android 拦截（\"不安全的应用\"）。\n\n• 用 Chrome 打开即可正常安装。\n• 或无需安装，直接在此页面下单。",
+        "nl_title": "🤖 用语言点单", "nl_ph": "如：2杯冰椰子饮品", "nl_btn": "添加",
+        "nl_thinking": "分析中…", "nl_none": "未找到匹配商品", "upsell_title": "搭配更美味",
     },
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
@@ -157,6 +167,8 @@ I18N = {
         "android_guide": "ブラウザメニュー (⋮) から「アプリをインストール」または「ホーム画面に追加」を選択してください。",
         "inapp_guide": "アプリ内ブラウザ（KakaoTalk、Instagram など）ではインストールできません。\n\n右上のメニュー (⋮ または ···) →「ブラウザで開く」→ Chrome を選んで再度お試しください。",
         "samsung_guide": "Samsung Internet ではインストール時に Android のセキュリティでブロック（「安全でないアプリ」）されることがあります。\n\n• Chrome で開くと正常にインストールできます。\n• またはインストールせず、この画面でそのまま注文できます。",
+        "nl_title": "🤖 言葉で注文", "nl_ph": "例: 冷たいココナッツ2つ", "nl_btn": "追加",
+        "nl_thinking": "処理中…", "nl_none": "該当メニューが見つかりません", "upsell_title": "一緒にいかが",
     },
 }
 
@@ -198,6 +210,106 @@ async def get_rates() -> dict:
     if not _RATE_CACHE["rates"]:  # API 실패 & 캐시 없음 → 폴백
         _RATE_CACHE.update(rates=dict(FALLBACK_RATES), ts=now, live=False)
     return _RATE_CACHE
+
+
+# ── AI (OpenAI / ChatGPT) ─────────────────────────────────────────────
+# OPENAI_API_KEY 환경변수가 있으면 실제 ChatGPT 사용, 없으면 통계/키워드 폴백.
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+
+
+def _openai_chat_sync(system: str, user: str) -> str:
+    body = {
+        "model": OPENAI_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.3,
+        "response_format": {"type": "json_object"},
+    }
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=json.dumps(body).encode(),
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.loads(r.read())
+    return data["choices"][0]["message"]["content"]
+
+
+async def llm_json(system: str, user: str):
+    """OpenAI에 JSON 응답 요청. 키 없거나 실패 시 None."""
+    if not OPENAI_API_KEY:
+        return None
+    try:
+        text = await asyncio.to_thread(_openai_chat_sync, system, user)
+        return json.loads(text)
+    except Exception:
+        return None
+
+
+def _resolve_items(raw) -> List[dict]:
+    """LLM/입력이 준 [{id, qty}]를 메뉴와 대조해 검증."""
+    by_id = {m["id"]: m for m in MENU}
+    out = []
+    for it in raw or []:
+        m = by_id.get(it.get("id"))
+        if not m:
+            continue
+        try:
+            qty = int(it.get("qty", 1))
+        except (TypeError, ValueError):
+            qty = 1
+        out.append({"id": m["id"], "qty": max(1, min(qty, 99)), "name": m["name"]})
+    return out
+
+
+_NUM_WORDS = {
+    "하나": 1, "한": 1, "둘": 2, "두": 2, "셋": 3, "세": 3, "넷": 4, "네": 4, "다섯": 5,
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+}
+# 메뉴별 추가 키워드 (짧은 표현·축약형 매칭용)
+_EXTRA_KW = {
+    "smoothie": ["스무디", "smoothie", "sinh tố", "sinh to", "冰沙", "スムージー"],
+    "water": ["워터", "water", "nước dừa", "nuoc dua", "椰子水", "ウォーター"],
+    "chip": ["칩", "chip", "脆片", "チップ"],
+}
+
+
+def _qty_from(s: str):
+    nums = re.findall(r"\d+", s)
+    if nums:
+        return int(nums[0])
+    for w, n in _NUM_WORDS.items():
+        if w in s:
+            return n
+    return None
+
+
+def _keyword_match(text: str) -> List[dict]:
+    """폴백: 메뉴명(다국어)+키워드를 텍스트에서 찾아 수량과 함께 추출."""
+    t = text.lower()
+    out = []
+    for m in MENU:
+        keywords = [m["name"].lower()] + [v.lower() for v in m["i18n"].values()] + _EXTRA_KW.get(m["id"], [])
+        pos, matched = -1, ""
+        for kw in keywords:
+            p = t.find(kw.lower())
+            if p >= 0:
+                pos, matched = p, kw
+                break
+        if pos < 0:
+            continue
+        end = pos + len(matched)
+        # 수량: 한국어는 명사 뒤("칩 2개"), 영어는 앞("2 chips") → 뒤 먼저, 그다음 앞
+        qty = _qty_from(t[end:end + 5]) or _qty_from(t[max(0, pos - 5):pos]) or 1
+        out.append({"id": m["id"], "qty": max(1, min(qty, 99)), "name": m["name"]})
+    return out
 
 
 app = FastAPI(title="QR Pay Demo")
@@ -494,8 +606,100 @@ async def admin_page(request: Request):
 
 @app.get("/api/insights")
 async def api_insights():
-    """스마트 운영 리포트 (통계 기반 인사이트)."""
-    return _smart_insights()
+    """스마트 운영 리포트. OPENAI_API_KEY 있으면 ChatGPT 분석, 없으면 통계 기반."""
+    base = _smart_insights()
+    if not OPENAI_API_KEY or not HISTORY:
+        base["ai"] = False
+        return base
+
+    context = {
+        "item_stats": _item_stats(),
+        "method_stats": [
+            {"label": m["label"], "count": m["count"], "revenue": m["revenue"], "pct": m["pct"]}
+            for m in _method_stats()
+        ],
+        "hourly_stats": _hourly_stats(),
+        "total_orders": len(HISTORY),
+        "total_revenue": sum(o.amount for o in HISTORY),
+    }
+    system = (
+        "You are a retail operations analyst for a coconut drink shop named coconut.kim. "
+        "Given the sales data, produce concise, specific, actionable insights in Korean. "
+        "Respond ONLY as JSON with these array-of-string keys: "
+        "insights (current status), forecast (demand/staffing/inventory advice), "
+        "combos (cross-sell/set-menu ideas), recommendations (action items). "
+        "Each array should have 2-4 short Korean sentences citing the actual numbers."
+    )
+    user = f"SALES_DATA={json.dumps(context, ensure_ascii=False)}"
+    result = await llm_json(system, user)
+    if result and all(isinstance(result.get(k), list) for k in ("insights", "forecast", "combos", "recommendations")):
+        result["ai"] = True
+        return result
+    base["ai"] = False
+    return base
+
+
+@app.post("/api/nl-order")
+async def nl_order(payload: dict):
+    """자연어 주문: 손님 문장 → 메뉴 변환. ChatGPT 있으면 AI, 없으면 키워드 매칭."""
+    text = (payload.get("text") or "").strip()[:200]
+    if not text:
+        raise HTTPException(status_code=400, detail="주문 내용을 입력해주세요.")
+
+    menu_brief = [
+        {"id": m["id"], "name": m["name"], "names": list(m["i18n"].values()), "price": m["price"]}
+        for m in MENU
+    ]
+    system = (
+        "You are an ordering assistant for a coconut drink shop. "
+        "Map the customer's free-text request (it may be in any language) to menu items. "
+        "Respond ONLY as JSON: {\"items\":[{\"id\":\"<menu id>\",\"qty\":<int>}], "
+        "\"reply\":\"<one short friendly confirmation in the SAME language as the request>\"}. "
+        "Only use ids from the provided menu. If nothing matches, return items=[]."
+    )
+    user = f"MENU={json.dumps(menu_brief, ensure_ascii=False)}\nREQUEST: {text}"
+    result = await llm_json(system, user)
+    if result and isinstance(result.get("items"), list):
+        items = _resolve_items(result["items"])
+        if items:
+            return {"items": items, "reply": (result.get("reply") or "")[:120], "ai": True}
+
+    # 폴백: 키워드 매칭
+    return {"items": _keyword_match(text), "reply": "", "ai": False}
+
+
+@app.get("/api/recommend")
+async def api_recommend(items: str = ""):
+    """업셀 추천: 현재 장바구니와 함께 자주 팔린 메뉴 (통계 기반)."""
+    cart_ids = {x for x in items.split(",") if x}
+    by_id = {m["id"]: m for m in MENU}
+
+    # 동시 주문 빈도
+    score: Dict[str, int] = {}
+    for o in HISTORY:
+        ids = {it["id"] for it in o.items}
+        if cart_ids & ids:
+            for other in ids - cart_ids:
+                score[other] = score.get(other, 0) + 1
+    rec_id = max(score, key=score.get) if score else None
+
+    # 폴백: 전체 인기 메뉴 → 아무 메뉴 (장바구니에 없는 것)
+    if not rec_id:
+        pop: Dict[str, int] = {}
+        for o in HISTORY:
+            for it in o.items:
+                pop[it["id"]] = pop.get(it["id"], 0) + it["qty"]
+        for cid, _ in sorted(pop.items(), key=lambda x: -x[1]):
+            if cid not in cart_ids:
+                rec_id = cid
+                break
+    if not rec_id:
+        rec_id = next((m["id"] for m in MENU if m["id"] not in cart_ids), None)
+
+    if not rec_id:
+        return {"recommend": None}
+    m = by_id[rec_id]
+    return {"recommend": {"id": m["id"], "name": m["name"], "i18n": m["i18n"], "price": m["price"], "emoji": m["emoji"]}}
 
 
 @app.get("/admin/export.csv")
