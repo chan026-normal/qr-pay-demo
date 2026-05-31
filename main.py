@@ -79,6 +79,7 @@ I18N = {
         "nl_title": "🤖 말로 주문하기", "nl_ph": "예: 워터1 스무디2", "nl_btn": "담기",
         "nl_thinking": "분석 중…", "nl_none": "맞는 메뉴를 찾지 못했어요", "upsell_title": "함께 즐기면 좋아요",
         "menu_label": "메뉴", "clear_cart": "전체 비우기",
+        "reset_order": "🔄 주문 초기화", "nl_reset_done": "주문을 초기화했어요",
     },
     "en": {
         "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
@@ -105,6 +106,7 @@ I18N = {
         "nl_title": "🤖 Order by text", "nl_ph": "e.g. 2 cold coconut drinks", "nl_btn": "Add",
         "nl_thinking": "Thinking…", "nl_none": "No matching items found", "upsell_title": "Goes well with",
         "menu_label": "Menu", "clear_cart": "Clear all",
+        "reset_order": "🔄 Reset order", "nl_reset_done": "Order cleared",
     },
     "vi": {
         "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
@@ -131,6 +133,7 @@ I18N = {
         "nl_title": "🤖 Đặt bằng lời", "nl_ph": "vd: 2 ly nước dừa mát", "nl_btn": "Thêm",
         "nl_thinking": "Đang xử lý…", "nl_none": "Không tìm thấy món phù hợp", "upsell_title": "Dùng kèm ngon hơn",
         "menu_label": "Thực đơn", "clear_cart": "Xóa hết",
+        "reset_order": "🔄 Đặt lại đơn", "nl_reset_done": "Đã xóa đơn hàng",
     },
     "zh": {
         "brand_sub": "预点单", "pickup_store": "到店取餐",
@@ -157,6 +160,7 @@ I18N = {
         "nl_title": "🤖 用语言点单", "nl_ph": "如：2杯冰椰子饮品", "nl_btn": "添加",
         "nl_thinking": "分析中…", "nl_none": "未找到匹配商品", "upsell_title": "搭配更美味",
         "menu_label": "菜单", "clear_cart": "全部清空",
+        "reset_order": "🔄 重新下单", "nl_reset_done": "已清空订单",
     },
     "ja": {
         "brand_sub": "事前注文", "pickup_store": "店頭受取",
@@ -183,6 +187,7 @@ I18N = {
         "nl_title": "🤖 言葉で注文", "nl_ph": "例: 冷たいココナッツ2つ", "nl_btn": "追加",
         "nl_thinking": "処理中…", "nl_none": "該当メニューが見つかりません", "upsell_title": "一緒にいかが",
         "menu_label": "メニュー", "clear_cart": "全て削除",
+        "reset_order": "🔄 注文リセット", "nl_reset_done": "注文をリセットしました",
     },
 }
 
@@ -715,6 +720,15 @@ async def nl_order(payload: dict):
     text = (payload.get("text") or "").strip()[:200]
     if not text:
         raise HTTPException(status_code=400, detail="주문 내용을 입력해주세요.")
+
+    # 초기화 의도 감지 (메뉴 매칭보다 먼저) — 다국어
+    reset_kw = [
+        "초기화", "비우기", "비워", "리셋", "다 지", "전부 지", "전체 삭제", "모두 삭제", "전부 삭제",
+        "clear", "reset", "empty", "xóa", "đặt lại", "hủy", "清空", "重置", "取消", "リセット", "全て削除", "全部消",
+    ]
+    low = text.lower()
+    if any(k.lower() in low for k in reset_kw):
+        return {"items": [], "reply": "", "reset": True, "ai": False}
 
     menu_brief = [
         {"id": m["id"], "name": m["name"], "names": list(m["i18n"].values()), "price": m["price"]}
