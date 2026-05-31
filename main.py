@@ -423,7 +423,9 @@ def stamp_state() -> dict:
 
 
 def hot_item_ids() -> List[str]:
-    """판매량 1위 메뉴 id (자동 '인기' 배지용)."""
+    """자동 '인기' 배지 = 판매량 1위. 단, 직원이 '인기'를 수동 지정했으면 자동은 끔."""
+    if any(m.get("badge") == "hot" for m in MENU):
+        return []
     pop: Dict[str, int] = {}
     for o in HISTORY:
         for it in o.items:
@@ -692,10 +694,10 @@ async def admin_page(request: Request):
 
 @app.post("/api/admin/badge")
 async def set_badge(payload: dict):
-    """직원이 메뉴 배지를 수동 지정 (없음 / 신메뉴 / 추천). 인기는 자동."""
+    """직원이 메뉴 배지를 수동 지정 (없음 / 인기 / 신메뉴 / 추천). 인기 미지정 시 판매량 1위 자동."""
     item_id = payload.get("id")
     badge = payload.get("badge") or None
-    if badge not in (None, "new", "reco"):
+    if badge not in (None, "hot", "new", "reco"):
         raise HTTPException(status_code=400, detail="잘못된 배지값입니다.")
     for m in MENU:
         if m["id"] == item_id:

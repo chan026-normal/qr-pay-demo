@@ -171,14 +171,14 @@
   <!-- 🏷 메뉴 배지 설정 (직원 수동) -->
   <div class="bg-white/90 backdrop-blur rounded-2xl border border-amber-200 p-5 mb-6">
     <h2 class="font-black text-stone-900">🏷 메뉴 배지 설정</h2>
-    <div class="text-xs text-stone-500 mt-0.5 mb-3">🔥 인기 배지는 판매량 1위에 자동 부여됩니다. 신메뉴·추천은 직접 지정하세요.</div>
+    <div class="text-xs text-stone-500 mt-0.5 mb-3">🔥 인기를 지정하지 않으면 판매량 1위에 자동 부여됩니다. 원하면 직접 지정할 수도 있어요.</div>
     <div class="divide-y divide-amber-100">
       {% for item in menu %}
       {% set cur = item.badge or '' %}
-      <div class="flex items-center justify-between py-2.5 gap-2">
+      <div class="flex items-center justify-between py-2.5 gap-2 flex-wrap">
         <span class="font-semibold text-stone-800">{{ item.emoji }} {{ item.name }}</span>
-        <div class="flex gap-1">
-          {% for val, label in [('', '없음'), ('new', '✨ 신메뉴'), ('reco', '👍 추천')] %}
+        <div class="flex gap-1 flex-wrap">
+          {% for val, label in [('', '없음'), ('hot', '🔥 인기'), ('new', '✨ 신메뉴'), ('reco', '👍 추천')] %}
           <button class="badge-btn text-xs px-2.5 py-1.5 rounded-lg border {% if cur == val %}bg-amber-700 text-white border-amber-700{% else %}bg-white text-stone-600 border-stone-200 hover:bg-stone-50{% endif %}"
                   data-id="{{ item.id }}" data-badge="{{ val }}">{{ label }}</button>
           {% endfor %}

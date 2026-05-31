@@ -134,9 +134,10 @@ const priceById = Object.fromEntries(MENU.map(m => [m.id, m.price]));
 const menuById = Object.fromEntries(MENU.map(m => [m.id, m]));
 function badgeText(item){
   if (!item) return '';
+  if (item.badge === 'hot') return t('badge_hot');   // 수동 인기
   if (item.badge === 'new') return t('badge_new');
   if (item.badge === 'reco') return t('badge_reco');
-  if (HOT_IDS.includes(item.id)) return t('badge_hot');
+  if (HOT_IDS.includes(item.id)) return t('badge_hot');  // 자동 인기 (수동 미지정 시)
   return '';
 }
 let cart = {};
