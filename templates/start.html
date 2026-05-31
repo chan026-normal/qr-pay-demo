@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>{{ store_name }}</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5C3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="coconut.kim">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="/i18n.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #C99068 0%, #8B5A2B 55%, #4A2C1A 100%);
+    background-attachment: fixed;
+  }
+  .fade-in { animation: fade .4s ease-out; }
+  @keyframes fade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+  .float { animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+</style>
+</head>
+<body class="min-h-screen text-white">
+<div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
+
+  <header class="flex items-center justify-between py-2">
+    <div class="flex items-center gap-2 text-sm opacity-90">
+      <div class="w-7 h-7 rounded-lg bg-white/20 grid place-items-center font-black">K</div>
+      <span class="font-bold">{{ store_name }}</span>
+    </div>
+    <select id="langSel" class="bg-white/15 text-white text-xs rounded-lg px-2 py-1.5 outline-none border border-white/20"></select>
+  </header>
+
+  <div class="flex-1 flex flex-col items-center justify-center text-center fade-in">
+    <img src="/icon-192.png" alt="coconut.kim" class="w-28 h-28 rounded-3xl shadow-lg float" />
+    <div class="mt-4 text-sm opacity-70" data-i18n="start_welcome">코코넛 음료 선주문</div>
+    <h1 class="text-3xl font-black mt-1">{{ store_name }}</h1>
+
+    <div class="mt-8 bg-white/12 backdrop-blur rounded-2xl p-6 border border-white/15 w-full">
+      <div class="text-xl font-black" data-i18n="start_title">앱으로 더 편하게</div>
+      <div class="text-sm opacity-80 mt-2 leading-relaxed" data-i18n="start_sub">홈 화면에 추가하면 다음부터 한 번에 주문하고 픽업 알림을 받아요</div>
+    </div>
+  </div>
+
+  <div class="pb-4 space-y-3">
+    <button id="installBtn"
+            class="w-full py-4 rounded-2xl bg-white text-amber-900 text-lg font-black hover:bg-amber-50 active:scale-[.99] transition">
+      <span data-i18n="start_install">앱 설치하기</span>
+    </button>
+    <a href="/order"
+       class="block w-full py-3 rounded-2xl text-center text-white/90 font-semibold border border-white/25 hover:bg-white/10 transition"
+       data-i18n="start_skip">그냥 주문하기 →</a>
+  </div>
+</div>
+
+<script>
+// ── 언어 ──
+function getLang(){
+  const saved = localStorage.getItem('cocokim_lang');
+  if (saved) return saved;
+  const codes = window.LANGS.map(l => l.code);
+  const nav = (navigator.language || 'ko').slice(0,2);
+  return codes.includes(nav) ? nav : 'ko';
+}
+let LANG = getLang();
+function t(k){ return (window.I18N[LANG] && window.I18N[LANG][k]) || window.I18N.ko[k] || k; }
+function applyLang(lang){
+  LANG = lang;
+  localStorage.setItem('cocokim_lang', lang);
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  const sel = document.getElementById('langSel'); if (sel) sel.value = lang;
+}
+// 언어 선택기 채우기
+const sel = document.getElementById('langSel');
+sel.innerHTML = window.LANGS.map(l => `<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
+sel.addEventListener('change', e => applyLang(e.target.value));
+applyLang(LANG);
+
+// ── 이미 앱으로 실행 중이면 주문 화면으로 바로 ──
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if (isStandalone) location.replace('/order');
+
+// ── PWA 설치 ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
+let deferredPrompt = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') location.href = '/order';
+  } else if (isIOS) {
+    alert(t('ios_guide'));
+  } else {
+    alert(t('android_guide'));
+  }
+});
+</script>
+</body>
+</html>

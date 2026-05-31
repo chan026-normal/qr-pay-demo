@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 import socket
 import uuid
 from base64 import b64encode
@@ -16,12 +17,135 @@ from fastapi.templating import Jinja2Templates
 STORE_NAME = "coconut.kim"
 STORE_ID = "coco-001"
 
-# 메뉴 카탈로그 (가맹점 POS 화면에 표시)
+# 메뉴 카탈로그 (name = 한국어 기본값, i18n = 다국어 메뉴명)
 MENU = [
-    {"id": "smoothie", "name": "코코넛 스무디", "price": 4500, "emoji": "🥥"},
-    {"id": "water", "name": "코코넛 워터", "price": 2500, "emoji": "💧"},
-    {"id": "chip", "name": "코코넛 칩", "price": 3000, "emoji": "🍪"},
+    {"id": "smoothie", "name": "코코넛 스무디", "price": 4500, "emoji": "🥥",
+     "i18n": {"ko": "코코넛 스무디", "en": "Coconut Smoothie", "vi": "Sinh tố dừa",
+              "zh": "椰子冰沙", "ja": "ココナッツスムージー"}},
+    {"id": "water", "name": "코코넛 워터", "price": 2500, "emoji": "💧",
+     "i18n": {"ko": "코코넛 워터", "en": "Coconut Water", "vi": "Nước dừa",
+              "zh": "椰子水", "ja": "ココナッツウォーター"}},
+    {"id": "chip", "name": "코코넛 칩", "price": 3000, "emoji": "🍪",
+     "i18n": {"ko": "코코넛 칩", "en": "Coconut Chips", "vi": "Chip dừa",
+              "zh": "椰子脆片", "ja": "ココナッツチップス"}},
 ]
+
+# 다국어 (손님용 화면: 선주문 랜딩 / 주문 / 추적)
+LANGS = [
+    {"code": "ko", "label": "한국어", "flag": "🇰🇷"},
+    {"code": "en", "label": "English", "flag": "🇺🇸"},
+    {"code": "vi", "label": "Tiếng Việt", "flag": "🇻🇳"},
+    {"code": "zh", "label": "中文", "flag": "🇨🇳"},
+    {"code": "ja", "label": "日本語", "flag": "🇯🇵"},
+]
+
+I18N = {
+    "ko": {
+        "brand_sub": "선주문", "pickup_store": "매장 픽업",
+        "order_title": "미리 주문하고 픽업하세요",
+        "pay_method": "결제 수단", "m_card": "카드", "m_bank": "계좌이체", "m_point": "포인트",
+        "name_label": "이름 (선택)", "name_ph": "홍길동",
+        "btn_empty": "메뉴를 담아주세요", "btn_order": "%s 주문하기",
+        "btn_processing": "결제 처리 중", "btn_retry": "다시 시도",
+        "mock_note": "시연용 모의 결제 · 실제 금액 청구 없음", "install": "📲 앱 설치",
+        "pickup_number": "픽업 번호", "paid_done": "결제 완료",
+        "st_received_big": "접수되었습니다", "st_received_sub": "매장에서 주문을 확인하고 있어요",
+        "st_preparing_big": "준비 중입니다 👨‍🍳", "st_preparing_sub": "맛있게 만들고 있어요. 조금만 기다려주세요",
+        "st_ready_big": "픽업하세요! 🎉", "st_ready_sub": "준비가 완료되었습니다. 카운터에서 받아가세요",
+        "st_pickedup_big": "수령 완료 ✅", "st_pickedup_sub": "이용해 주셔서 감사합니다",
+        "step1": "접수", "step2": "준비중", "step3": "준비완료", "step4": "수령",
+        "order_items": "주문 내역", "total": "합계", "order_no": "주문번호",
+        "start_welcome": "코코넛 음료 선주문", "start_title": "앱으로 더 편하게",
+        "start_sub": "홈 화면에 추가하면 다음부터 한 번에 주문하고 픽업 알림을 받아요",
+        "start_install": "앱 설치하기", "start_skip": "그냥 주문하기 →",
+        "ios_guide": "홈 화면에 추가하기\n\n1) 하단 공유 버튼 (□↑) 을 누르세요\n2) \"홈 화면에 추가\" 를 선택하세요\n3) \"추가\" 를 누르면 앱 아이콘이 생깁니다",
+        "android_guide": "브라우저 메뉴 (⋮) 에서 \"홈 화면에 추가\" 또는 \"앱 설치\" 를 선택하세요.",
+    },
+    "en": {
+        "brand_sub": "Pre-order", "pickup_store": "Store Pickup",
+        "order_title": "Order ahead & pick up",
+        "pay_method": "Payment", "m_card": "Card", "m_bank": "Transfer", "m_point": "Points",
+        "name_label": "Name (optional)", "name_ph": "Your name",
+        "btn_empty": "Add items to order", "btn_order": "Order %s",
+        "btn_processing": "Processing…", "btn_retry": "Try again",
+        "mock_note": "Demo payment · no real charge", "install": "📲 Install app",
+        "pickup_number": "Pickup number", "paid_done": "Paid",
+        "st_received_big": "Order received", "st_received_sub": "The store is confirming your order",
+        "st_preparing_big": "Preparing 👨‍🍳", "st_preparing_sub": "We're making it. Please wait a moment",
+        "st_ready_big": "Ready for pickup! 🎉", "st_ready_sub": "Your order is ready. Please collect at the counter",
+        "st_pickedup_big": "Picked up ✅", "st_pickedup_sub": "Thank you for your visit",
+        "step1": "Received", "step2": "Preparing", "step3": "Ready", "step4": "Pickup",
+        "order_items": "Order", "total": "Total", "order_no": "Order no.",
+        "start_welcome": "Coconut drinks · pre-order", "start_title": "Easier with the app",
+        "start_sub": "Add to your home screen to reorder in one tap and get pickup alerts",
+        "start_install": "Install app", "start_skip": "Just order →",
+        "ios_guide": "Add to Home Screen\n\n1) Tap the Share button (□↑) at the bottom\n2) Choose \"Add to Home Screen\"\n3) Tap \"Add\" to create the app icon",
+        "android_guide": "Open the browser menu (⋮) and choose \"Install app\" or \"Add to Home screen\".",
+    },
+    "vi": {
+        "brand_sub": "Đặt trước", "pickup_store": "Nhận tại quầy",
+        "order_title": "Đặt trước và đến lấy",
+        "pay_method": "Thanh toán", "m_card": "Thẻ", "m_bank": "Chuyển khoản", "m_point": "Điểm",
+        "name_label": "Tên (tùy chọn)", "name_ph": "Tên của bạn",
+        "btn_empty": "Hãy chọn món", "btn_order": "Đặt hàng %s",
+        "btn_processing": "Đang xử lý…", "btn_retry": "Thử lại",
+        "mock_note": "Thanh toán thử nghiệm · không tính phí", "install": "📲 Cài app",
+        "pickup_number": "Số nhận món", "paid_done": "Đã thanh toán",
+        "st_received_big": "Đã nhận đơn", "st_received_sub": "Cửa hàng đang xác nhận đơn của bạn",
+        "st_preparing_big": "Đang chuẩn bị 👨‍🍳", "st_preparing_sub": "Đang làm món của bạn. Vui lòng đợi một chút",
+        "st_ready_big": "Sẵn sàng nhận món! 🎉", "st_ready_sub": "Đơn đã sẵn sàng. Vui lòng nhận tại quầy",
+        "st_pickedup_big": "Đã nhận ✅", "st_pickedup_sub": "Cảm ơn quý khách",
+        "step1": "Đã nhận", "step2": "Chuẩn bị", "step3": "Sẵn sàng", "step4": "Nhận",
+        "order_items": "Đơn hàng", "total": "Tổng", "order_no": "Mã đơn",
+        "start_welcome": "Đồ uống dừa · đặt trước", "start_title": "Tiện hơn với ứng dụng",
+        "start_sub": "Thêm vào màn hình chính để đặt nhanh và nhận thông báo nhận món",
+        "start_install": "Cài đặt ứng dụng", "start_skip": "Đặt món luôn →",
+        "ios_guide": "Thêm vào Màn hình chính\n\n1) Nhấn nút Chia sẻ (□↑) ở dưới\n2) Chọn \"Thêm vào MH chính\"\n3) Nhấn \"Thêm\" để tạo biểu tượng",
+        "android_guide": "Mở menu trình duyệt (⋮) và chọn \"Cài ứng dụng\" hoặc \"Thêm vào MH chính\".",
+    },
+    "zh": {
+        "brand_sub": "预点单", "pickup_store": "到店取餐",
+        "order_title": "提前下单，到店自取",
+        "pay_method": "支付方式", "m_card": "银行卡", "m_bank": "转账", "m_point": "积分",
+        "name_label": "姓名（选填）", "name_ph": "您的姓名",
+        "btn_empty": "请选择商品", "btn_order": "下单 %s",
+        "btn_processing": "处理中…", "btn_retry": "重试",
+        "mock_note": "演示支付 · 不收取费用", "install": "📲 安装应用",
+        "pickup_number": "取餐号", "paid_done": "已支付",
+        "st_received_big": "已接单", "st_received_sub": "门店正在确认您的订单",
+        "st_preparing_big": "制作中 👨‍🍳", "st_preparing_sub": "正在为您制作，请稍候",
+        "st_ready_big": "可以取餐啦！🎉", "st_ready_sub": "您的订单已就绪，请到柜台领取",
+        "st_pickedup_big": "已取餐 ✅", "st_pickedup_sub": "感谢您的惠顾",
+        "step1": "接单", "step2": "制作", "step3": "就绪", "step4": "取餐",
+        "order_items": "订单明细", "total": "合计", "order_no": "订单号",
+        "start_welcome": "椰子饮品 · 预点单", "start_title": "用应用更方便",
+        "start_sub": "添加到主屏幕，下次一键下单并接收取餐通知",
+        "start_install": "安装应用", "start_skip": "直接下单 →",
+        "ios_guide": "添加到主屏幕\n\n1) 点击底部分享按钮 (□↑)\n2) 选择\"添加到主屏幕\"\n3) 点击\"添加\"即可生成应用图标",
+        "android_guide": "打开浏览器菜单 (⋮)，选择\"安装应用\"或\"添加到主屏幕\"。",
+    },
+    "ja": {
+        "brand_sub": "事前注文", "pickup_store": "店頭受取",
+        "order_title": "事前に注文して受け取り",
+        "pay_method": "支払い方法", "m_card": "カード", "m_bank": "振込", "m_point": "ポイント",
+        "name_label": "お名前（任意）", "name_ph": "お名前",
+        "btn_empty": "メニューを選んでください", "btn_order": "%s を注文",
+        "btn_processing": "処理中…", "btn_retry": "再試行",
+        "mock_note": "デモ決済 · 実際の請求なし", "install": "📲 アプリ",
+        "pickup_number": "受取番号", "paid_done": "支払い完了",
+        "st_received_big": "注文を受け付けました", "st_received_sub": "店舗が注文を確認しています",
+        "st_preparing_big": "準備中 👨‍🍳", "st_preparing_sub": "心を込めて作っています。少々お待ちください",
+        "st_ready_big": "受け取れます！🎉", "st_ready_sub": "ご注文の準備ができました。カウンターでお受け取りください",
+        "st_pickedup_big": "受取完了 ✅", "st_pickedup_sub": "ご利用ありがとうございました",
+        "step1": "受付", "step2": "準備", "step3": "完了", "step4": "受取",
+        "order_items": "注文内容", "total": "合計", "order_no": "注文番号",
+        "start_welcome": "ココナッツドリンク · 事前注文", "start_title": "アプリでもっと便利に",
+        "start_sub": "ホーム画面に追加すれば、次回からワンタップで注文・受取通知が届きます",
+        "start_install": "アプリをインストール", "start_skip": "そのまま注文 →",
+        "ios_guide": "ホーム画面に追加\n\n1) 下部の共有ボタン (□↑) をタップ\n2) 「ホーム画面に追加」を選択\n3) 「追加」をタップするとアイコンが作成されます",
+        "android_guide": "ブラウザメニュー (⋮) から「アプリをインストール」または「ホーム画面に追加」を選択してください。",
+    },
+}
 
 app = FastAPI(title="QR Pay Demo")
 templates = Jinja2Templates(directory="templates")
@@ -216,24 +340,44 @@ async def order_page(request: Request):
             "request": request,
             "store_name": STORE_NAME,
             "menu": MENU,
+            "langs": LANGS,
         },
     )
 
 
 @app.get("/order-qr", response_class=HTMLResponse)
 async def order_qr_page(request: Request):
-    """매장/테이블에 비치하는 선주문 진입 QR (스캔하면 /order 열림)."""
+    """매장/테이블에 비치하는 선주문 진입 QR (스캔하면 /start 랜딩 열림)."""
     base = str(request.base_url).rstrip("/")
-    order_url = f"{base}/order"
+    start_url = f"{base}/start"
     return templates.TemplateResponse(
         "order_qr.html",
         {
             "request": request,
             "store_name": STORE_NAME,
-            "order_url": order_url,
-            "qr": make_qr_data_url(order_url),
+            "order_url": start_url,
+            "qr": make_qr_data_url(start_url),
         },
     )
+
+
+@app.get("/start", response_class=HTMLResponse)
+async def start_page(request: Request):
+    """QR 스캔 후 첫 화면: 앱 설치 권유 (건너뛰고 바로 주문 가능)."""
+    return templates.TemplateResponse(
+        "start.html",
+        {"request": request, "store_name": STORE_NAME, "langs": LANGS},
+    )
+
+
+@app.get("/i18n.js")
+async def i18n_js():
+    """손님 화면 다국어 사전 (JS)."""
+    js = "window.LANGS=%s;window.I18N=%s;" % (
+        json.dumps(LANGS, ensure_ascii=False),
+        json.dumps(I18N, ensure_ascii=False),
+    )
+    return Response(content=js, media_type="application/javascript; charset=utf-8")
 
 
 @app.get("/manifest.json")
@@ -287,6 +431,8 @@ async def track_page(request: Request, order_id: str):
             "request": request,
             "store_name": STORE_NAME,
             "order": order,
+            "menu": MENU,
+            "langs": LANGS,
         },
     )
 
@@ -383,7 +529,7 @@ async def create_preorder(payload: dict):
         qty = max(0, min(int(it.get("qty", 0)), 99))
         if qty == 0:
             continue
-        items.append({"name": m["name"], "qty": qty, "price": m["price"]})
+        items.append({"id": m["id"], "name": m["name"], "qty": qty, "price": m["price"]})
         amount += m["price"] * qty
 
     if not items or amount <= 0:

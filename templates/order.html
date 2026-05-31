@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="coconut.kim">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="/i18n.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   body {
@@ -31,20 +32,20 @@
 <body class="min-h-screen text-white">
 <div class="max-w-md mx-auto min-h-screen flex flex-col p-5">
 
-  <header class="flex items-center justify-between py-3 text-sm opacity-90">
-    <div class="flex items-center gap-2">
+  <header class="flex items-center justify-between py-3">
+    <div class="flex items-center gap-2 text-sm opacity-90">
       <div class="w-7 h-7 rounded-lg bg-white/20 grid place-items-center font-black">K</div>
-      <span>킴페이 · 선주문</span>
+      <span>킴페이 · <span data-i18n="brand_sub">선주문</span></span>
     </div>
     <div class="flex items-center gap-2">
-      <button id="installBtn" class="hidden px-3 py-1.5 rounded-full bg-white text-amber-900 font-bold text-xs">📲 앱 설치</button>
-      <span id="pickupTag" class="opacity-70">매장 픽업</span>
+      <button id="installBtn" class="hidden px-3 py-1.5 rounded-full bg-white text-amber-900 font-bold text-xs" data-i18n="install">📲 앱 설치</button>
+      <select id="langSel" class="bg-white/15 text-white text-xs rounded-lg px-2 py-1.5 outline-none border border-white/20"></select>
     </div>
   </header>
 
   <div class="mt-2">
-    <div class="text-xs uppercase tracking-widest opacity-70">미리 주문하고 픽업하세요</div>
-    <div class="text-2xl font-black mt-1">{{ store_name }}</div>
+    <div class="text-2xl font-black">{{ store_name }}</div>
+    <div class="text-sm opacity-80 mt-0.5" data-i18n="order_title">미리 주문하고 픽업하세요</div>
   </div>
 
   <!-- 메뉴 -->
@@ -53,8 +54,8 @@
     <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15 flex items-center gap-3">
       <div class="text-3xl">{{ item.emoji }}</div>
       <div class="flex-1 min-w-0">
-        <div class="font-bold">{{ item.name }}</div>
-        <div class="text-sm opacity-80">{{ "{:,}".format(item.price) }}원</div>
+        <div class="font-bold menu-name" data-id="{{ item.id }}">{{ item.name }}</div>
+        <div class="text-sm opacity-80 menu-price" data-price="{{ item.price }}"></div>
       </div>
       <div class="flex items-center gap-2">
         <button class="qty-btn w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 font-bold text-lg" data-id="{{ item.id }}" data-action="dec">−</button>
@@ -67,50 +68,73 @@
 
   <!-- 결제 영역 -->
   <div class="mt-6 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/15">
-    <div class="text-sm font-semibold mb-2">결제 수단</div>
+    <div class="text-sm font-semibold mb-2" data-i18n="pay_method">결제 수단</div>
     <div id="methods" class="grid grid-cols-3 gap-2 mb-4">
-      <button data-method="card" class="method active py-3 rounded-xl bg-white text-amber-900 font-bold text-sm">카드</button>
-      <button data-method="bank" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm">계좌이체</button>
-      <button data-method="point" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm">포인트</button>
+      <button data-method="card" class="method active py-3 rounded-xl bg-white text-amber-900 font-bold text-sm" data-i18n="m_card">카드</button>
+      <button data-method="bank" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm" data-i18n="m_bank">계좌이체</button>
+      <button data-method="point" class="method py-3 rounded-xl bg-white/10 border border-white/20 font-semibold text-sm" data-i18n="m_point">포인트</button>
     </div>
-    <label class="text-sm opacity-80">이름 (선택)</label>
-    <input id="payerName" maxlength="20" placeholder="홍길동"
+    <label class="text-sm opacity-80" data-i18n="name_label">이름 (선택)</label>
+    <input id="payerName" maxlength="20" data-i18n-ph="name_ph"
            class="mt-1 w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 outline-none placeholder-white/40 focus:border-white/60 text-sm" />
   </div>
 
   <div class="mt-auto pt-6 sticky bottom-0">
     <button id="payBtn" disabled
             class="w-full py-4 rounded-2xl bg-white text-amber-900 text-lg font-black hover:bg-amber-50 active:scale-[.99] transition disabled:opacity-40 disabled:cursor-not-allowed">
-      <span id="payLabel">메뉴를 담아주세요</span>
+      <span id="payLabel">···</span>
       <span id="paySpin" class="hidden inline-block w-5 h-5 border-2 border-amber-900 border-t-transparent rounded-full spin align-middle ml-2"></span>
     </button>
-    <div class="text-center text-xs opacity-70 mt-3 mb-2">시연용 모의 결제 · 실제 금액 청구 없음</div>
+    <div class="text-center text-xs opacity-70 mt-3 mb-2" data-i18n="mock_note">시연용 모의 결제 · 실제 금액 청구 없음</div>
   </div>
 </div>
 
 <script>
 const MENU = {{ menu|tojson }};
 const priceById = Object.fromEntries(MENU.map(m => [m.id, m.price]));
-let cart = {}; // {id: qty}
+const menuById = Object.fromEntries(MENU.map(m => [m.id, m]));
+let cart = {};
 let selectedMethod = 'card';
+
+// ── 언어 ──
+function getLang(){
+  const saved = localStorage.getItem('cocokim_lang');
+  if (saved) return saved;
+  const codes = window.LANGS.map(l => l.code);
+  const nav = (navigator.language || 'ko').slice(0,2);
+  return codes.includes(nav) ? nav : 'ko';
+}
+let LANG = getLang();
+function t(k){ return (window.I18N[LANG] && window.I18N[LANG][k]) || window.I18N.ko[k] || k; }
+function priceFmt(n){ return LANG === 'ko' ? n.toLocaleString('ko-KR') + '원' : '₩' + n.toLocaleString('en-US'); }
+function menuName(id){ const m = menuById[id]; return (m.i18n && m.i18n[LANG]) || m.name; }
+
+function applyLang(lang){
+  LANG = lang;
+  localStorage.setItem('cocokim_lang', lang);
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  document.querySelectorAll('.menu-name').forEach(el => el.textContent = menuName(el.dataset.id));
+  document.querySelectorAll('.menu-price').forEach(el => el.textContent = priceFmt(Number(el.dataset.price)));
+  const sel = document.getElementById('langSel'); if (sel) sel.value = lang;
+  refresh();
+}
+
+const langSel = document.getElementById('langSel');
+langSel.innerHTML = window.LANGS.map(l => `<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
+langSel.addEventListener('change', e => applyLang(e.target.value));
 
 function fmt(n){ return Number(n).toLocaleString('ko-KR'); }
 function total(){ return Object.entries(cart).reduce((s,[id,q]) => s + priceById[id]*q, 0); }
 function count(){ return Object.values(cart).reduce((s,q)=>s+q,0); }
 
 function refresh(){
-  document.querySelectorAll('.qty-display').forEach(el => {
-    el.textContent = cart[el.dataset.id] || 0;
-  });
+  document.querySelectorAll('.qty-display').forEach(el => { el.textContent = cart[el.dataset.id] || 0; });
   const payBtn = document.getElementById('payBtn');
   const label = document.getElementById('payLabel');
-  if (count() === 0){
-    payBtn.disabled = true;
-    label.textContent = '메뉴를 담아주세요';
-  } else {
-    payBtn.disabled = false;
-    label.textContent = `${fmt(total())}원 주문하기`;
-  }
+  if (count() === 0){ payBtn.disabled = true; label.textContent = t('btn_empty'); }
+  else { payBtn.disabled = false; label.textContent = t('btn_order').replace('%s', priceFmt(total())); }
 }
 
 document.querySelectorAll('.qty-btn').forEach(b => b.addEventListener('click', () => {
@@ -134,7 +158,7 @@ document.getElementById('payBtn').addEventListener('click', async () => {
   if (count() === 0) return;
   const btn = document.getElementById('payBtn');
   btn.disabled = true;
-  document.getElementById('payLabel').textContent = '결제 처리 중';
+  document.getElementById('payLabel').textContent = t('btn_processing');
   document.getElementById('paySpin').classList.remove('hidden');
   try {
     const items = Object.entries(cart).map(([id,qty]) => ({id, qty}));
@@ -142,20 +166,20 @@ document.getElementById('payBtn').addEventListener('click', async () => {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ items, method: selectedMethod, payer_name: document.getElementById('payerName').value, base: location.origin })
     });
-    if (!res.ok) throw new Error((await res.json()).detail || '주문 실패');
+    if (!res.ok) throw new Error((await res.json()).detail || 'error');
     const data = await res.json();
-    location.href = data.track_url;  // 주문 추적 화면으로 이동
+    location.href = data.track_url;
   } catch(e){
     alert(e.message);
     btn.disabled = false;
-    document.getElementById('payLabel').textContent = '다시 시도';
+    document.getElementById('payLabel').textContent = t('btn_retry');
     document.getElementById('paySpin').classList.add('hidden');
   }
 });
 
-refresh();
+applyLang(LANG);
 
-// ── PWA: 서비스워커 등록 + 설치 버튼 ──
+// ── PWA ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 }
@@ -163,26 +187,16 @@ let deferredPrompt = null;
 const installBtn = document.getElementById('installBtn');
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
 window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
+  e.preventDefault(); deferredPrompt = e;
   if (installBtn && !isStandalone) installBtn.classList.remove('hidden');
 });
-
-if (installBtn) {
-  if (isIOS && !isStandalone) installBtn.classList.remove('hidden'); // iOS는 안내만 가능
+if (installBtn){
+  if (isIOS && !isStandalone) installBtn.classList.remove('hidden');
   installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      installBtn.classList.add('hidden');
-    } else if (isIOS) {
-      alert('홈 화면에 추가하기\n\n1) 하단 공유 버튼 (□↑) 을 누르세요\n2) "홈 화면에 추가" 를 선택하세요\n3) "추가" 를 누르면 앱 아이콘이 생깁니다');
-    } else {
-      alert('브라우저 메뉴 (⋮) 에서 "홈 화면에 추가" 또는 "앱 설치" 를 선택하세요.');
-    }
+    if (deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; installBtn.classList.add('hidden'); }
+    else if (isIOS){ alert(t('ios_guide')); }
+    else { alert(t('android_guide')); }
   });
 }
 </script>
