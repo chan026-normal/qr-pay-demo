@@ -8,8 +8,9 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import qrcode
+from PIL import Image, ImageDraw
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
 STORE_NAME = "coconut.kim"
@@ -89,6 +90,54 @@ def make_qr_data_url(url: str) -> str:
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return "data:image/png;base64," + b64encode(buf.getvalue()).decode()
+
+
+_ICON_CACHE: Dict[int, bytes] = {}
+
+
+def make_icon(size: int) -> bytes:
+    """coconut.kim 앱 아이콘을 코드로 생성 (코코넛 무늬). static 파일 불필요."""
+    if size in _ICON_CACHE:
+        return _ICON_CACHE[size]
+    img = Image.new("RGB", (size, size), "#8B5A2B")
+    d = ImageDraw.Draw(img)
+    # 배경: 카라멜 → 코코넛 브라운 세로 그라데이션
+    c0, c1 = (0xC9, 0x90, 0x68), (0x4A, 0x2C, 0x1A)
+    for y in range(size):
+        t = y / max(1, size - 1)
+        d.line(
+            [(0, y), (size, y)],
+            fill=tuple(int(c0[i] + (c1[i] - c0[i]) * t) for i in range(3)),
+        )
+    # 코코넛 단면 (크림색 원)
+    pad = size * 0.22
+    d.ellipse([pad, pad, size - pad, size - pad], fill="#F4E8CC")
+    # 코코넛 씨눈 3개 (삼각 배치)
+    cx, cy, rr = size / 2, size / 2, size * 0.055
+    for ox, oy in [(0, -size * 0.10), (-size * 0.09, size * 0.06), (size * 0.09, size * 0.06)]:
+        d.ellipse([cx + ox - rr, cy + oy - rr, cx + ox + rr, cy + oy + rr], fill="#5C3D2E")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    _ICON_CACHE[size] = buf.getvalue()
+    return _ICON_CACHE[size]
+
+
+SERVICE_WORKER_JS = """
+const CACHE = 'coconut-kim-v1';
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  // 네트워크 우선 (온라인이면 항상 최신), 실패 시 캐시 폴백
+  e.respondWith(
+    fetch(e.request).then(resp => {
+      const copy = resp.clone();
+      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+      return resp;
+    }).catch(() => caches.match(e.request))
+  );
+});
+""".strip()
 
 
 async def broadcast(order_id: str, event: dict) -> None:
@@ -184,6 +233,45 @@ async def order_qr_page(request: Request):
             "order_url": order_url,
             "qr": make_qr_data_url(order_url),
         },
+    )
+
+
+@app.get("/manifest.json")
+async def web_manifest():
+    """PWA 매니페스트 — 홈 화면 추가 시 앱처럼 동작하게 함."""
+    return JSONResponse(
+        {
+            "name": "coconut.kim",
+            "short_name": "coconut.kim",
+            "description": "코코넛 음료 선주문 · QR 간편결제",
+            "start_url": "/order",
+            "scope": "/",
+            "display": "standalone",
+            "orientation": "portrait",
+            "background_color": "#8B5A2B",
+            "theme_color": "#5C3D2E",
+            "lang": "ko",
+            "icons": [
+                {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+            ],
+        }
+    )
+
+
+@app.get("/icon-{size}.png")
+async def app_icon(size: int):
+    if size not in (192, 512):
+        raise HTTPException(status_code=404, detail="아이콘 크기 없음")
+    return Response(content=make_icon(size), media_type="image/png")
+
+
+@app.get("/sw.js")
+async def service_worker():
+    return Response(
+        content=SERVICE_WORKER_JS,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache"},
     )
 
 

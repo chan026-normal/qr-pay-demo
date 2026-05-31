@@ -4,6 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>{{ store_name }} · 선주문</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5C3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="coconut.kim">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -28,7 +36,10 @@
       <div class="w-7 h-7 rounded-lg bg-white/20 grid place-items-center font-black">K</div>
       <span>킴페이 · 선주문</span>
     </div>
-    <span class="opacity-70">매장 픽업</span>
+    <div class="flex items-center gap-2">
+      <button id="installBtn" class="hidden px-3 py-1.5 rounded-full bg-white text-amber-900 font-bold text-xs">📲 앱 설치</button>
+      <span id="pickupTag" class="opacity-70">매장 픽업</span>
+    </div>
   </header>
 
   <div class="mt-2">
@@ -143,6 +154,37 @@ document.getElementById('payBtn').addEventListener('click', async () => {
 });
 
 refresh();
+
+// ── PWA: 서비스워커 등록 + 설치 버튼 ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
+let deferredPrompt = null;
+const installBtn = document.getElementById('installBtn');
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (installBtn && !isStandalone) installBtn.classList.remove('hidden');
+});
+
+if (installBtn) {
+  if (isIOS && !isStandalone) installBtn.classList.remove('hidden'); // iOS는 안내만 가능
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.classList.add('hidden');
+    } else if (isIOS) {
+      alert('홈 화면에 추가하기\n\n1) 하단 공유 버튼 (□↑) 을 누르세요\n2) "홈 화면에 추가" 를 선택하세요\n3) "추가" 를 누르면 앱 아이콘이 생깁니다');
+    } else {
+      alert('브라우저 메뉴 (⋮) 에서 "홈 화면에 추가" 또는 "앱 설치" 를 선택하세요.');
+    }
+  });
+}
 </script>
 </body>
 </html>
