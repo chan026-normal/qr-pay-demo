@@ -544,6 +544,19 @@ async def broadcast_kitchen(event: dict) -> None:
         KITCHEN_SUBSCRIBERS.remove(ws)
 
 
+@app.get("/health")
+@app.head("/health")
+async def health():
+    """UptimeRobot 등 모니터링용 가벼운 헬스체크 (서버 깨우기)."""
+    return {"status": "ok"}
+
+
+@app.head("/")
+async def merchant_head():
+    """UptimeRobot이 HEAD로 핑해도 200을 반환 (콜드 스타트 깨우기용)."""
+    return Response(status_code=200)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def merchant_page(request: Request):
     lan_ip = get_lan_ip()
