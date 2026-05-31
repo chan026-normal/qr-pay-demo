@@ -16,6 +16,17 @@
   @keyframes cardin { from{opacity:0;transform:translateY(-8px) scale(.98)} to{opacity:1;transform:none} }
   .flash { animation: flash 1s ease; }
   @keyframes flash { 0%{box-shadow:0 0 0 0 rgba(180,83,9,.5)} 100%{box-shadow:0 0 0 16px rgba(180,83,9,0)} }
+  /* 새 주문 카드: 살짝 커지며 등장 + 초록 테두리 한 번 번쩍 */
+  @keyframes cardPop {
+    0%   { transform: scale(0.85); opacity: 0; }
+    60%  { transform: scale(1.04); }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  @keyframes flashBorder {
+    0%   { box-shadow: 0 0 0 3px rgba(93,202,165,0.9); }
+    100% { box-shadow: 0 0 0 3px rgba(93,202,165,0); }
+  }
+  .is-new { animation: cardPop 0.45s ease-out, flashBorder 1.6s ease-out; }
 </style>
 </head>
 <body>
@@ -154,7 +165,11 @@ function connect(){
     if (msg.type === 'new_order'){
       upsert(msg.order);
       const card = document.getElementById('card-'+msg.order.order_id);
-      if (card) card.classList.add('flash');
+      if (card){
+        card.classList.remove('card-in');                          // 기본 등장효과 제거(중복 방지)
+        card.classList.add('is-new');                              // 살짝 커지며 등장 + 초록 테두리 번쩍
+        setTimeout(() => card.classList.remove('is-new'), 1800);   // 끝나면 클래스 정리
+      }
     } else if (msg.type === 'status'){
       upsert(msg.order);
     } else if (msg.type === 'reset'){
