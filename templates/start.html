@@ -103,11 +103,13 @@ if ('serviceWorker' in navigator) {
 let deferredPrompt = null;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isInApp = /KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|Line\/|NAVER|DaumApps|; wv\)/i.test(navigator.userAgent);
+const isSamsung = /SamsungBrowser/i.test(navigator.userAgent);
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
 window.addEventListener('appinstalled', () => location.href = '/order');
 
 function installGuide(){
   if (isInApp) return t('inapp_guide');
+  if (isSamsung) return t('samsung_guide');   // 삼성 인터넷 → Chrome 권장
   return isIOS ? t('ios_guide') : t('android_guide');
 }
 function showInstallSheet(){
@@ -117,13 +119,15 @@ function showInstallSheet(){
 document.getElementById('installClose').addEventListener('click', () => document.getElementById('installSheet').classList.add('hidden'));
 
 document.getElementById('installBtn').addEventListener('click', async () => {
+  // 인앱 브라우저·삼성 인터넷은 설치가 차단될 수 있어 안내 시트부터 표시
+  if (isInApp || isSamsung) { showInstallSheet(); return; }
   if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     deferredPrompt = null;
     if (outcome === 'accepted') location.href = '/order';
   } else {
-    showInstallSheet();   // 네이티브 프롬프트가 없으면 항상 안내 시트 표시
+    showInstallSheet();
   }
 });
 </script>

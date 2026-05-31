@@ -195,12 +195,14 @@ let deferredPrompt = null;
 const installBtn = document.getElementById('installBtn');
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isInApp = /KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|Line\/|NAVER|DaumApps|; wv\)/i.test(navigator.userAgent);
+const isSamsung = /SamsungBrowser/i.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
 window.addEventListener('appinstalled', () => { if (installBtn) installBtn.classList.add('hidden'); });
 
 function installGuide(){
   if (isInApp) return t('inapp_guide');
+  if (isSamsung) return t('samsung_guide');   // 삼성 인터넷 → Chrome 권장
   return isIOS ? t('ios_guide') : t('android_guide');
 }
 function showInstallSheet(){
@@ -213,13 +215,14 @@ if (installClose) installClose.addEventListener('click', () => document.getEleme
 if (installBtn){
   if (!isStandalone) installBtn.classList.remove('hidden');  // 항상 표시 (앱 실행 중이 아닐 때)
   installBtn.addEventListener('click', async () => {
+    if (isInApp || isSamsung) { showInstallSheet(); return; }  // 차단 가능 → 안내 먼저
     if (deferredPrompt){
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       deferredPrompt = null;
       if (outcome === 'accepted') installBtn.classList.add('hidden');
     } else {
-      showInstallSheet();   // 네이티브 프롬프트가 없으면 항상 안내 시트 표시
+      showInstallSheet();
     }
   });
 }
