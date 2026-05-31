@@ -17,7 +17,7 @@ STORE_ID = "coco-001"
 
 # 메뉴 카탈로그 (가맹점 POS 화면에 표시)
 MENU = [
-    {"id": "smoothie", "name": "코코넛 스무디", "price": 4000, "emoji": "🥥"},
+    {"id": "smoothie", "name": "코코넛 스무디", "price": 4500, "emoji": "🥥"},
     {"id": "water", "name": "코코넛 워터", "price": 2500, "emoji": "💧"},
     {"id": "chip", "name": "코코넛 칩", "price": 3000, "emoji": "🍪"},
 ]
