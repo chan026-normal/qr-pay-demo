@@ -79,7 +79,18 @@
               style="background:linear-gradient(135deg,#B45309 0%,#78350F 100%);">
         결제 요청 (QR 생성)
       </button>
-      <div class="mt-3 text-xs text-amber-900/60 text-center">손님은 QR을 스캔해 결제 진행 · 시연 호스트: {{ lan_host }}</div>
+      <div class="mt-3 text-xs text-amber-900/60 text-center">손님이 QR을 스캔해 직접 결제 · 시연 호스트: {{ lan_host }}</div>
+
+      <!-- 직원 직접 결제 (QR 없이 카운터에서 바로 결제 완료) -->
+      <div class="mt-4 pt-4 border-t border-amber-100">
+        <div class="text-xs font-bold text-amber-900 mb-2">또는 직원이 직접 결제 · 손님 결제수단 선택</div>
+        <div id="directPay" class="grid grid-cols-4 gap-2">
+          <button data-method="cash" disabled class="dpay py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 font-bold text-sm hover:bg-emerald-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition">현금</button>
+          <button data-method="card" disabled class="dpay py-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 font-bold text-sm hover:bg-amber-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition">카드</button>
+          <button data-method="momo" disabled class="dpay py-3 rounded-xl border border-pink-200 bg-pink-50 text-pink-700 font-bold text-sm hover:bg-pink-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition">MoMo</button>
+          <button data-method="zalopay" disabled class="dpay py-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 font-bold text-sm hover:bg-blue-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition">ZaloPay</button>
+        </div>
+      </div>
     </section>
 
     <!-- RIGHT: QR / 결제 상태 -->
@@ -189,7 +200,9 @@ function renderCart() {
   }
   document.getElementById('totalAmount').textContent = fmt(cartTotal());
   document.getElementById('itemCount').textContent = cartItemCount();
-  chargeBtn.disabled = cartTotal() <= 0;
+  const empty = cartTotal() <= 0;
+  chargeBtn.disabled = empty;
+  document.querySelectorAll('.dpay').forEach(x => x.disabled = empty);   // 직접 결제 버튼도 함께 토글
 }
 
 document.querySelectorAll('.menu-card').forEach(b => b.addEventListener('click', () => {
@@ -263,6 +276,39 @@ chargeBtn.addEventListener('click', async () => {
     chargeBtn.disabled = false;
   }
 });
+
+// 직원 직접 결제: 주문 생성 → 즉시 결제 완료 (QR 없이 카운터에서)
+document.querySelectorAll('.dpay').forEach(btn => btn.addEventListener('click', async () => {
+  const amount = cartTotal();
+  if (amount <= 0) return;
+  const method = btn.dataset.method;
+  chargeBtn.disabled = true;
+  document.querySelectorAll('.dpay').forEach(x => x.disabled = true);
+  try {
+    const orderItems = Object.entries(cart).filter(([_, q]) => q > 0).map(([id, qty]) => ({ id, qty }));
+    // 1) 주문 생성
+    const order = await (await fetch('/api/order', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ amount, memo: cartMemo(), items: orderItems, base: location.origin })
+    })).json();
+    currentOrderId = order.order_id;
+    // 2) 직원이 그 자리에서 결제 처리
+    const paid = await (await fetch(`/api/order/${order.order_id}/pay`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ method, payer_name: '현장결제' })
+    })).json();
+    const o = paid.order;
+    document.getElementById('paidAmount').textContent = fmt(o.amount);
+    document.getElementById('paidPayer').textContent = o.payer_name || '현장';
+    document.getElementById('paidMethod').textContent = ({momo:'MoMo', zalopay:'ZaloPay', cash:'현금', card:'카드', mobilepay:'간편결제'}[o.method] || '-');
+    document.getElementById('paidAt').textContent = (o.paid_at || '').replace('T',' ');
+    showState('paid');
+    setBadge('결제 완료', 'bg-emerald-100 text-emerald-700');
+  } catch (err) {
+    alert('직접 결제 실패: ' + err);
+    renderCart();   // 버튼 상태 복구
+  }
+}));
 
 document.getElementById('cancelBtn').addEventListener('click', async () => {
   if (!currentOrderId) return;
