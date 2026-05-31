@@ -402,6 +402,70 @@ def _method_stats():
     return sorted(out, key=lambda x: -x["revenue"])
 
 
+def _smart_insights():
+    """매출 데이터 기반 운영 인사이트 생성 (통계/규칙 기반 — 추후 LLM으로 교체 가능).
+
+    반환: 현황 분석 / 수요 예측·발주 / 함께 팔리는 조합 / 실행 추천
+    """
+    from itertools import combinations
+
+    if not HISTORY:
+        return {
+            "insights": ["아직 분석할 주문 데이터가 없습니다. 주문이 쌓이면 자동으로 분석합니다."],
+            "forecast": [], "combos": [], "recommendations": [],
+        }
+
+    total_rev = sum(o.amount for o in HISTORY)
+    n_orders = len(HISTORY)
+    item_stats = _item_stats()
+    method_stats = _method_stats()
+    hourly = _hourly_stats()
+    name_by_id = {m["id"]: m["name"] for m in MENU}
+
+    insights, forecast, combos, recommendations = [], [], [], []
+
+    # ① 현황 분석
+    avg = total_rev // n_orders if n_orders else 0
+    insights.append(f"총 {n_orders}건 주문 · 매출 {total_rev:,}원 · 평균 객단가 {avg:,}원입니다.")
+    if item_stats:
+        top = item_stats[0]
+        share = round(top["revenue"] / total_rev * 100) if total_rev else 0
+        insights.append(f"가장 인기 메뉴는 '{top['name']}' — {top['qty']}개 판매, 매출의 약 {share}%를 차지합니다.")
+    if method_stats:
+        insights.append(f"결제는 주로 '{method_stats[0]['label']}'({method_stats[0]['pct']}%)로 이루어집니다.")
+
+    # ⑤ 수요 예측 · 발주
+    if hourly:
+        peak = max(hourly, key=lambda h: h["revenue"])
+        forecast.append(f"매출 피크는 {peak['hour']}시대입니다. 이 시간 전후로 인력·재고를 보강하세요.")
+    if item_stats:
+        forecast.append(f"'{item_stats[0]['name']}'은(는) 회전이 빠릅니다. 재고를 넉넉히 준비하세요.")
+        if len(item_stats) > 1:
+            slow = item_stats[-1]
+            forecast.append(f"'{slow['name']}'은(는) 판매가 더딥니다. 세트 구성·프로모션을 검토하세요.")
+
+    # ④ 함께 팔리는 조합 (동시 주문 빈도)
+    pair_count: Dict[tuple, int] = {}
+    for o in HISTORY:
+        ids = sorted({it["id"] for it in o.items})
+        for a, b in combinations(ids, 2):
+            pair_count[(a, b)] = pair_count.get((a, b), 0) + 1
+    for (a, b), c in sorted(pair_count.items(), key=lambda x: -x[1])[:3]:
+        combos.append(f"'{name_by_id.get(a, a)}' + '{name_by_id.get(b, b)}' 함께 주문 {c}회 — 세트로 묶으면 객단가 상승 기대")
+    if not combos:
+        combos.append("아직 함께 주문된 조합 데이터가 부족합니다. 주문이 쌓이면 추천 세트를 제안합니다.")
+
+    # 💡 실행 추천
+    point = next((m for m in method_stats if m["method"] == "point"), None)
+    if not point or point["pct"] < 15:
+        recommendations.append("포인트 결제 비중이 낮습니다. 적립·포인트 이벤트로 재방문을 유도하세요.")
+    if item_stats and total_rev and round(item_stats[0]["revenue"] / total_rev * 100) > 55:
+        recommendations.append(f"'{item_stats[0]['name']}' 의존도가 높습니다. 다른 메뉴 프로모션으로 매출을 분산하면 안정적입니다.")
+    recommendations.append("외국어 주문 비중을 관찰해, 많이 쓰이는 언어권 손님 대상 현지화 마케팅을 고려하세요.")
+
+    return {"insights": insights, "forecast": forecast, "combos": combos, "recommendations": recommendations}
+
+
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     stats = _item_stats()
@@ -422,6 +486,12 @@ async def admin_page(request: Request):
             "method_stats": methods,
         },
     )
+
+
+@app.get("/api/insights")
+async def api_insights():
+    """스마트 운영 리포트 (통계 기반 인사이트)."""
+    return _smart_insights()
 
 
 @app.get("/admin/export.csv")

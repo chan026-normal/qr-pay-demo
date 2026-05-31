@@ -57,6 +57,47 @@
     </div>
   </div>
 
+  <!-- 🤖 스마트 운영 리포트 (AI 분석) -->
+  <div class="bg-white/90 backdrop-blur rounded-2xl border border-indigo-200 p-5 mb-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="font-black text-stone-900">🤖 스마트 운영 리포트</h2>
+        <div class="text-xs text-stone-500 mt-0.5">매출 데이터를 분석해 운영 조언을 제공합니다</div>
+      </div>
+      <button id="genReport" class="px-4 py-2 rounded-lg text-white text-sm font-bold" style="background:linear-gradient(135deg,#7C3AED,#4F46E5);">분석 생성</button>
+    </div>
+    <div id="reportHint" class="mt-4 text-amber-900/50 text-sm">위 <b>분석 생성</b> 버튼을 누르면 결과가 표시됩니다.</div>
+    <div id="reportBody" class="mt-4 hidden grid md:grid-cols-2 gap-4"></div>
+  </div>
+
+  <script>
+    document.getElementById('genReport').addEventListener('click', async () => {
+      const btn = document.getElementById('genReport');
+      const body = document.getElementById('reportBody');
+      const hint = document.getElementById('reportHint');
+      btn.textContent = '분석 중…'; btn.disabled = true;
+      try {
+        const d = await (await fetch('/api/insights')).json();
+        await new Promise(r => setTimeout(r, 500)); // 분석 처리 연출
+        const card = (title, arr, color) => (arr && arr.length) ? `
+          <div class="rounded-xl border border-stone-200 p-4 bg-white">
+            <div class="font-bold text-stone-900 mb-2">${title}</div>
+            ${arr.map(x => `<div class="flex gap-2 mb-1.5 text-sm text-stone-700"><span style="color:${color}">●</span><span>${x}</span></div>`).join('')}
+          </div>` : '';
+        body.innerHTML =
+          card('📋 현황 분석', d.insights, '#B45309') +
+          card('🔮 수요 예측 · 발주', d.forecast, '#D97706') +
+          card('🤝 함께 팔리는 조합', d.combos, '#059669') +
+          card('💡 실행 추천', d.recommendations, '#7C3AED');
+        body.classList.remove('hidden');
+        hint.classList.add('hidden');
+      } catch (e) {
+        hint.textContent = '분석 실패. 다시 시도해주세요.';
+      }
+      btn.textContent = '다시 분석'; btn.disabled = false;
+    });
+  </script>
+
   <!-- 품목별 판매 대시보드 -->
   <div class="bg-white/90 backdrop-blur rounded-2xl border border-amber-200 p-5 mb-6">
     <div class="flex items-center justify-between mb-4">
