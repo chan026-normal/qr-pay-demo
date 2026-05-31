@@ -254,11 +254,11 @@ def get_lan_ip() -> str:
     return ip
 
 
-def make_qr_data_url(url: str) -> str:
+def make_qr_png_bytes(url: str, box_size: int = 10) -> bytes:
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=10,
+        box_size=box_size,
         border=2,
     )
     qr.add_data(url)
@@ -266,7 +266,11 @@ def make_qr_data_url(url: str) -> str:
     img = qr.make_image(fill_color="#0F172A", back_color="#FFFFFF")
     buf = io.BytesIO()
     img.save(buf, format="PNG")
-    return "data:image/png;base64," + b64encode(buf.getvalue()).decode()
+    return buf.getvalue()
+
+
+def make_qr_data_url(url: str) -> str:
+    return "data:image/png;base64," + b64encode(make_qr_png_bytes(url)).decode()
 
 
 _ICON_CACHE: Dict[int, bytes] = {}
@@ -561,6 +565,18 @@ async def order_qr_page(request: Request):
             "order_url": start_url,
             "qr": make_qr_data_url(start_url),
         },
+    )
+
+
+@app.get("/order-qr.png")
+async def order_qr_png(request: Request):
+    """선주문 진입 QR을 고화질 PNG로 다운로드 (PPT·포스터용)."""
+    base = str(request.base_url).rstrip("/")
+    png = make_qr_png_bytes(f"{base}/start", box_size=20)  # 인쇄/슬라이드용 고해상도
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Content-Disposition": 'attachment; filename="coconut_order_qr.png"'},
     )
 
 
