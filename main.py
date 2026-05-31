@@ -680,8 +680,23 @@ async def admin_page(request: Request):
             "hourly_stats": hourly,
             "max_hour_rev": max_hour_rev,
             "method_stats": methods,
+            "menu": MENU,
         },
     )
+
+
+@app.post("/api/admin/badge")
+async def set_badge(payload: dict):
+    """직원이 메뉴 배지를 수동 지정 (없음 / 신메뉴 / 추천). 인기는 자동."""
+    item_id = payload.get("id")
+    badge = payload.get("badge") or None
+    if badge not in (None, "new", "reco"):
+        raise HTTPException(status_code=400, detail="잘못된 배지값입니다.")
+    for m in MENU:
+        if m["id"] == item_id:
+            m["badge"] = badge
+            return {"ok": True, "id": item_id, "badge": badge}
+    raise HTTPException(status_code=404, detail="메뉴를 찾을 수 없습니다.")
 
 
 @app.get("/api/insights")
