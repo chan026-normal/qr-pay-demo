@@ -32,9 +32,9 @@ MENU = [
 
 # 다국어 (손님용 화면: 선주문 랜딩 / 주문 / 추적)
 LANGS = [
+    {"code": "vi", "label": "Tiếng Việt", "flag": "🇻🇳"},  # 주 무대: 최상단
     {"code": "ko", "label": "한국어", "flag": "🇰🇷"},
     {"code": "en", "label": "English", "flag": "🇺🇸"},
-    {"code": "vi", "label": "Tiếng Việt", "flag": "🇻🇳"},
     {"code": "zh", "label": "中文", "flag": "🇨🇳"},
     {"code": "ja", "label": "日本語", "flag": "🇯🇵"},
 ]
