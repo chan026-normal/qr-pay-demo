@@ -354,6 +354,10 @@ def _resolve_items(raw) -> List[dict]:
 _NUM_WORDS = {
     "하나": 1, "한": 1, "둘": 2, "두": 2, "셋": 3, "세": 3, "넷": 4, "네": 4, "다섯": 5,
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    # 베트남어 (음성 주문 다수) — một/hai/ba…
+    "một": 1, "hai": 2, "ba": 3, "bốn": 4, "năm": 5, "sáu": 6, "bảy": 7, "tám": 8,
+    # 중국어 / 일본어
+    "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "二つ": 2, "三つ": 3, "ふたつ": 2, "みっつ": 3,
 }
 # 메뉴별 추가 키워드 (짧은 표현·축약형 매칭용)
 _EXTRA_KW = {
@@ -389,7 +393,7 @@ def _keyword_match(text: str) -> List[dict]:
             continue
         end = pos + len(matched)
         # 수량: 한국어는 명사 뒤("칩 2개"), 영어는 앞("2 chips") → 뒤 먼저, 그다음 앞
-        qty = _qty_from(t[end:end + 5]) or _qty_from(t[max(0, pos - 5):pos]) or 1
+        qty = _qty_from(t[end:end + 6]) or _qty_from(t[max(0, pos - 12):pos]) or 1
         out.append({"id": m["id"], "qty": max(1, min(qty, 99)), "name": m["name"]})
     return out
 
@@ -959,10 +963,15 @@ async def nl_order(payload: dict):
     ]
     system = (
         "You are an ordering assistant for a coconut drink shop. "
-        "Map the customer's free-text request (it may be in any language) to menu items. "
+        "Map the customer's free-text request to menu items. The text may be in ANY language and "
+        "may come from imperfect speech recognition (approximate spelling, missing Vietnamese tones, "
+        "colloquial phrasing) — match GENEROUSLY to the closest menu item. "
+        "Extract the quantity carefully from number words in any language "
+        "(Vietnamese: một=1, hai=2, ba=3, bốn=4, năm=5, sáu=6; Korean: 한/두/세; English: one/two/three). "
+        "Words like 'ly', 'cup', '잔', '杯' are units, NOT quantities. Default qty=1 if unspecified. "
         "Respond ONLY as JSON: {\"items\":[{\"id\":\"<menu id>\",\"qty\":<int>}], "
         "\"reply\":\"<one short friendly confirmation in the SAME language as the request>\"}. "
-        "Only use ids from the provided menu. If nothing matches, return items=[]."
+        "Only use ids from the provided menu. If truly nothing matches, return items=[]."
     )
     user = f"MENU={json.dumps(menu_brief, ensure_ascii=False)}\nREQUEST: {text}"
     result = await llm_json(system, user)
