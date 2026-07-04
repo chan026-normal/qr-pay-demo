@@ -1,3 +1,7 @@
+# qr-pay-demo — Copyright (c) 2026 chan026-normal. All rights reserved.
+# 무단 복제·수정·재배포 금지 (Unauthorized copying/redistribution prohibited). See LICENSE.
+# https://github.com/chan026-normal/qr-pay-demo
+
 import asyncio
 import csv
 import io
